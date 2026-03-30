@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Pricing — CVCraft{% endblock %}
+{% block content %}
+<section class="py-20 max-w-5xl mx-auto px-4">
+    <div class="text-center mb-14">
+        <h1 class="text-5xl font-display font-bold text-white mb-4">Simple, Transparent Pricing</h1>
+        <p class="text-gray-500 text-lg">Start free. Upgrade when you're ready.</p>
+    </div>
+    <div class="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+        <!-- Free -->
+        <div class="pricing-card">
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold text-white mb-1">Free</h3>
+                <p class="text-gray-500 text-sm">Perfect for getting started</p>
+            </div>
+            <div class="mb-6">
+                <span class="text-5xl font-display font-bold text-white">$0</span>
+                <span class="text-gray-500">/forever</span>
+            </div>
+            <ul class="space-y-3 mb-8">
+                <li class="pricing-feature"><i data-lucide="check" class="w-4 h-4 text-gold"></i> 3 resumes</li>
+                <li class="pricing-feature"><i data-lucide="check" class="w-4 h-4 text-gold"></i> Basic templates</li>
+                <li class="pricing-feature"><i data-lucide="check" class="w-4 h-4 text-gold"></i> 1 PDF export/month
+                </li>
+                <li class="pricing-feature"><i data-lucide="check" class="w-4 h-4 text-gold"></i> Shareable link</li>
+                <li class="pricing-feature text-gray-600"><i data-lucide="x" class="w-4 h-4 text-gray-600"></i> AI
+                    features</li>
+                <li class="pricing-feature text-gray-600"><i data-lucide="x" class="w-4 h-4 text-gray-600"></i> All
+                    templates</li>
+                <li class="pricing-feature text-gray-600"><i data-lucide="x" class="w-4 h-4 text-gray-600"></i>
+                    Watermark-free</li>
+            </ul>
+            <a href="{% url 'account_signup' %}" class="btn-outline w-full text-center">Get Started Free</a>
+        </div>
+
+        <!-- Pro -->
+        <div class="pricing-card border-gold/40 relative">
+            <div class="absolute -top-4 left-1/2 -translate-x-1/2">
+                <span class="bg-gold text-dark-bg text-xs font-bold px-4 py-1 rounded-full">MOST POPULAR</span>
+            </div>
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold text-white mb-1">Pro</h3>
+                <p class="text-gray-500 text-sm">For serious job seekers</p>
+            </div>
+            <div class="mb-6">
+                <span class="text-5xl font-display font-bold text-white">$9</span>
+                <span class="text-gray-500">/month</span>
+                <p class="text-gold text-sm mt-1">or $79/year — save 27%</p>
+            </div>
+            <ul class="space-y-3 mb-8">
+                <li class="pricing-feature"><i data-lucide="check" class="w-4 h-4 text-gold"></i> Unlimited resumes</li>
+                <li class="pricing-feature"><i data-lucide="check" class="w-4 h-4 text-gold"></i> All 50+ templates</li>
+                <li class="pricing-feature"><i data-lucide="check" class="w-4 h-4 text-gold"></i> Unlimited PDF exports
+                </li>
+                <li class="pricing-feature"><i data-lucide="check" class="w-4 h-4 text-gold"></i> Full AI assistance
+                </li>
+                <li class="pricing-feature"><i data-lucide="check" class="w-4 h-4 text-gold"></i> Cover letter builder
+                </li>
+                <li class="pricing-feature"><i data-lucide="check" class="w-4 h-4 text-gold"></i> ATS score checker</li>
+                <li class="pricing-feature"><i data-lucide="check" class="w-4 h-4 text-gold"></i> No watermarks</li>
+            </ul>
+            <a href="{% url 'billing:checkout' 'pro_monthly' %}" class="btn-gold w-full text-center">Upgrade to Pro</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

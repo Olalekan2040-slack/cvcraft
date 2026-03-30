@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Create Account — CVCraft{% endblock %}
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center px-4 py-16">
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <a href="{% url 'landing' %}" class="inline-flex items-center gap-2.5 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-gold flex items-center justify-center shadow-gold">
+                    <i data-lucide="file-text" class="w-5 h-5 text-dark-bg"></i>
+                </div>
+                <span class="text-2xl font-display font-bold">CV<span class="text-gold">Craft</span></span>
+            </a>
+            <h1 class="text-3xl font-display font-bold text-white">Create your account</h1>
+            <p class="text-gray-500 mt-2">Free forever — no credit card required</p>
+        </div>
+
+        <div class="bg-dark-card border border-dark-border rounded-2xl p-8 shadow-card">
+            <form method="post" action="{% url 'account_signup' %}" class="space-y-5">
+                {% csrf_token %}
+                {% if form.errors %}
+                <div class="p-4 rounded-xl bg-red-950/50 border border-red-700/50 text-red-300 text-sm">
+                    {% for field in form %}{% for error in field.errors %}<p>{{ field.label }}: {{ error }}</p>{% endfor %}{% endfor %}
+                    {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">First Name</label>
+                        <input type="text" name="first_name" class="form-input" placeholder="Alex">
+                    </div>
+                    <div>
+                        <label class="form-label">Last Name</label>
+                        <input type="text" name="last_name" class="form-input" placeholder="Johnson">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label">Email address</label>
+                    <input type="email" name="email" required class="form-input" placeholder="you@example.com">
+                </div>
+
+                <div>
+                    <label class="form-label">Password</label>
+                    <input type="password" name="password1" required class="form-input" placeholder="Min 8 characters">
+                </div>
+
+                <div>
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" name="password2" required class="form-input" placeholder="Repeat password">
+                </div>
+
+                <div class="flex items-start gap-2">
+                    <input type="checkbox" name="terms" id="terms" required
+                        class="w-4 h-4 mt-0.5 rounded border-dark-border bg-dark-surface accent-gold">
+                    <label for="terms" class="text-sm text-gray-400">
+                        I agree to CVCraft's <a href="#" class="text-gold hover:text-gold-light">Terms of Service</a>
+                        and <a href="#" class="text-gold hover:text-gold-light">Privacy Policy</a>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-gold w-full">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                    Create Free Account
+                </button>
+
+                {% if redirect_field_value %}
+                <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+                {% endif %}
+            </form>
+        </div>
+
+        <p class="text-center text-gray-500 text-sm mt-6">
+            Already have an account?
+            <a href="{% url 'account_login' %}" class="text-gold hover:text-gold-light font-medium">Sign in</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

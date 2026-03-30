@@ -1,0 +1,684 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family={{ resume.font_family|default:"Inter" }}:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --accent: {
+                    {
+                    resume.accent_color|default: "#C9A84C"
+                }
+            }
+
+            ;
+
+            --accent-dim: {
+                    {
+                    resume.accent_color|default: "#C9A84C"
+                }
+            }
+
+            22;
+            --font: '{{ resume.font_family|default:"Inter" }}',
+            'Helvetica Neue',
+            Arial,
+            sans-serif;
+            --mono: 'JetBrains Mono',
+            'Courier New',
+            monospace;
+            --dark: #0f1117;
+            --mid: #2a2d35;
+            --text: #1a1d23;
+            --muted: #5a5f6e;
+            --light: #f8f9fa;
+            --border: #e2e4e9;
+        }
+
+        body {
+            font-family: var(--font);
+            font-size: 9.5pt;
+            color: var(--text);
+            line-height: 1.55;
+            background: #fff;
+        }
+
+        .page {
+            width: 794px;
+            min-height: 1123px;
+            background: white;
+        }
+
+        /* ── Header ──────────────────────────────────────── */
+        .header {
+            background: var(--dark);
+            padding: 32px 44px 28px;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent) 0%, transparent 100%);
+        }
+
+        .header-grid {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .name {
+            font-size: 24pt;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.5px;
+            line-height: 1.1;
+        }
+
+        .title-badge {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 8.5pt;
+            color: var(--accent);
+            margin-top: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .title-badge::before {
+            content: '> ';
+            opacity: 0.5;
+        }
+
+        .contact-list {
+            list-style: none;
+            text-align: right;
+        }
+
+        .contact-list li {
+            font-size: 8.5pt;
+            color: #aaa;
+            line-height: 1.9;
+            font-family: var(--mono);
+        }
+
+        .contact-list li span {
+            color: var(--accent);
+            margin-right: 4px;
+        }
+
+        .summary-bar {
+            margin-top: 18px;
+            padding: 10px 14px;
+            border-left: 3px solid var(--accent);
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 0 4px 4px 0;
+            font-size: 9pt;
+            color: #c0c4cc;
+            line-height: 1.6;
+        }
+
+        /* ── Body ────────────────────────────────────────── */
+        .body {
+            display: grid;
+            grid-template-columns: 1fr 195px;
+        }
+
+        /* ── Main column ─────────────────────────────────── */
+        .main-col {
+            padding: 26px 28px 32px 44px;
+            border-right: 1px solid var(--border);
+        }
+
+        /* ── Sidebar ─────────────────────────────────────── */
+        .sidebar {
+            padding: 26px 20px 32px 20px;
+            background: #fafbfc;
+        }
+
+        /* ── Section ─────────────────────────────────────── */
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--mono);
+            font-size: 7.5pt;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ── Entry (experience / education) ─────────────── */
+        .entry {
+            margin-bottom: 14px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #f0f1f3;
+        }
+
+        .entry:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .entry-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .entry-position {
+            font-size: 10pt;
+            font-weight: 600;
+            color: var(--dark);
+            line-height: 1.2;
+        }
+
+        .entry-date {
+            font-family: var(--mono);
+            font-size: 7.5pt;
+            color: var(--muted);
+            white-space: nowrap;
+            flex-shrink: 0;
+            background: #f3f4f6;
+            padding: 1px 6px;
+            border-radius: 3px;
+        }
+
+        .entry-company {
+            font-size: 9pt;
+            font-weight: 500;
+            color: var(--accent);
+            margin-top: 1px;
+        }
+
+        .entry-location {
+            font-size: 8pt;
+            color: var(--muted);
+            margin-top: 1px;
+            font-style: italic;
+        }
+
+        .bullets {
+            list-style: none;
+            margin-top: 6px;
+            padding-left: 0;
+        }
+
+        .bullets li {
+            font-size: 8.5pt;
+            color: #3a3e4a;
+            padding-left: 14px;
+            position: relative;
+            margin-bottom: 3px;
+            line-height: 1.45;
+        }
+
+        .bullets li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+            font-size: 7.5pt;
+            top: 2px;
+        }
+
+        /* ── Projects ────────────────────────────────────── */
+        .project-entry {
+            margin-bottom: 12px;
+        }
+
+        .project-head {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .project-name {
+            font-size: 9.5pt;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .project-tech {
+            font-family: var(--mono);
+            font-size: 7pt;
+            color: #fff;
+            background: var(--mid);
+            padding: 1px 6px;
+            border-radius: 3px;
+            white-space: nowrap;
+        }
+
+        .project-desc {
+            font-size: 8.5pt;
+            color: #444;
+            margin-top: 3px;
+            line-height: 1.4;
+        }
+
+        .project-bullets {
+            list-style: none;
+            margin-top: 4px;
+            padding-left: 0;
+        }
+
+        .project-bullets li {
+            font-size: 8pt;
+            color: #444;
+            padding-left: 12px;
+            position: relative;
+            margin-bottom: 2px;
+            line-height: 1.4;
+        }
+
+        .project-bullets li::before {
+            content: '–';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+        }
+
+        /* ── Sidebar items ───────────────────────────────── */
+        .skill-group {
+            margin-bottom: 12px;
+        }
+
+        .skill-group-label {
+            font-family: var(--mono);
+            font-size: 7pt;
+            color: var(--muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .skill-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+        }
+
+        .chip {
+            font-size: 7.5pt;
+            padding: 2px 7px;
+            border-radius: 3px;
+            background: #fff;
+            border: 1px solid var(--border);
+            color: #333;
+            white-space: nowrap;
+        }
+
+        .chip-accent {
+            background: var(--dark);
+            color: #fff;
+            border-color: var(--dark);
+        }
+
+        .sidebar-section {
+            margin-bottom: 16px;
+        }
+
+        .sidebar-title {
+            font-family: var(--mono);
+            font-size: 7pt;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+        }
+
+        .cert-item {
+            margin-bottom: 7px;
+        }
+
+        .cert-name {
+            font-size: 8.5pt;
+            font-weight: 500;
+            color: var(--dark);
+            line-height: 1.3;
+        }
+
+        .cert-sub {
+            font-size: 7.5pt;
+            color: var(--muted);
+        }
+
+        .edu-item {
+            margin-bottom: 8px;
+        }
+
+        .edu-degree {
+            font-size: 8.5pt;
+            font-weight: 500;
+            color: var(--dark);
+            line-height: 1.3;
+        }
+
+        .edu-school {
+            font-size: 8pt;
+            color: var(--accent);
+        }
+
+        .edu-detail {
+            font-size: 7.5pt;
+            color: var(--muted);
+        }
+
+        .lang-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .lang-name {
+            font-size: 8.5pt;
+            color: var(--dark);
+        }
+
+        .lang-lvl {
+            font-size: 7.5pt;
+            color: #fff;
+            background: var(--accent);
+            border-radius: 2px;
+            padding: 0 5px;
+        }
+
+        @media print {
+            body {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+
+            .page {
+                width: 100%;
+                min-height: unset !important;
+            }
+
+            .download-bar {
+                display: none !important;
+            }
+
+            /* Prevent sidebar from stretching below its content on page 2+ */
+            .sidebar {
+                align-self: start;
+            }
+
+            /* Break rules */
+            .section {
+                break-inside: avoid;
+            }
+
+            .section-title {
+                break-after: avoid;
+                page-break-after: avoid;
+            }
+
+            .entry {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .entry-head {
+                break-after: avoid;
+                page-break-after: avoid;
+            }
+
+            .bullets {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .bullets li {
+                break-inside: avoid;
+            }
+
+            .project-entry {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .sidebar-section {
+                break-inside: avoid;
+            }
+        }
+
+        .download-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #0f1117;
+            border-bottom: 2px solid #C9A84C;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 32px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9pt;
+            color: #aaa;
+        }
+
+        .download-bar .dl-name {
+            color: #C9A84C;
+            font-weight: 500;
+        }
+
+        .download-bar .dl-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #C9A84C;
+            color: #0f1117;
+            font-family: inherit;
+            font-size: 9pt;
+            font-weight: 600;
+            padding: 6px 18px;
+            border-radius: 4px;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: background 0.15s;
+        }
+
+        .download-bar .dl-btn:hover {
+            background: #E8C76A;
+        }
+    </style>
+</head>
+
+<body>
+
+    {% if public_pdf_url %}
+    <div class="download-bar">
+        <span class="dl-name">{{ data.personal.full_name }} — Resume</span>
+        <a class="dl-btn" href="{{ public_pdf_url }}">
+            ⬇ Download PDF
+        </a>
+    </div>
+    {% endif %}
+
+    <div class="page">
+
+        <!-- Header -->
+        <div class="header">
+            <div class="header-grid">
+                <div>
+                    <div class="name">{{ data.personal.full_name|default:"Your Name" }}</div>
+                    {% if data.personal.job_title %}
+                    <div class="title-badge">{{ data.personal.job_title }}</div>
+                    {% endif %}
+                </div>
+                <ul class="contact-list">
+                    {% if data.personal.email %}
+                    <li><span>✉</span>{{ data.personal.email }}</li>
+                    {% endif %}
+                    {% if data.personal.location %}
+                    <li><span>◎</span>{{ data.personal.location }}</li>
+                    {% endif %}
+                    {% if data.personal.website %}
+                    <li><span>⌘</span>{{ data.personal.website }}</li>
+                    {% endif %}
+                    {% if data.personal.github %}
+                    <li><span>⌥</span>{{ data.personal.github }}</li>
+                    {% elif data.personal.linkedin %}
+                    <li><span>⌥</span>{{ data.personal.linkedin }}</li>
+                    {% endif %}
+                </ul>
+            </div>
+            {% if data.personal.summary %}
+            <div class="summary-bar">{{ data.personal.summary }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Body -->
+        <div class="body">
+            <!-- Main column -->
+            <div class="main-col">
+
+                <!-- Work Experience -->
+                {% if data.experience %}
+                <div class="section">
+                    <div class="section-title">Work Experience</div>
+                    {% for exp in data.experience %}
+                    <div class="entry">
+                        <div class="entry-head">
+                            <div class="entry-position">{{ exp.position }}</div>
+                            <div class="entry-date">{{ exp.start_date }}{% if exp.end_date %} – {{ exp.end_date }}{% endif %}</div>
+                        </div>
+                        <div class="entry-company">{{ exp.company }}</div>
+                        {% if exp.location %}<div class="entry-location">{{ exp.location }}</div>{% endif %}
+                        {% if exp.bullets %}
+                        <ul class="bullets">
+                            {% for b in exp.bullets %}{% if b %}<li>{{ b }}</li>{% endif %}{% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Projects -->
+                {% if data.projects %}
+                <div class="section">
+                    <div class="section-title">Key Projects</div>
+                    {% for proj in data.projects %}
+                    <div class="project-entry">
+                        <div class="project-head">
+                            <span class="project-name">{{ proj.name }}</span>
+                            {% if proj.technologies %}<span class="project-tech">{{ proj.technologies }}</span>{% endif %}
+                        </div>
+                        {% if proj.description %}<div class="project-desc">{{ proj.description }}</div>{% endif %}
+                        {% if proj.bullets %}
+                        <ul class="project-bullets">
+                            {% for b in proj.bullets %}{% if b %}<li>{{ b }}</li>{% endif %}{% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+
+                <!-- Education -->
+                {% if data.education %}
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Education</div>
+                    {% for edu in data.education %}
+                    <div class="edu-item">
+                        <div class="edu-degree">{{ edu.degree }}</div>
+                        <div class="edu-school">{{ edu.institution }}</div>
+                        <div class="edu-detail">{{ edu.location }}{% if edu.end_date %} · {{ edu.end_date }}{% endif %}{% if edu.grade %} · {{ edu.grade }}{% endif %}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Skills -->
+                {% if data.skills %}
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Technical Skills</div>
+                    <div class="skill-chips">
+                        {% for skill in data.skills %}
+                        <span class="chip {% if skill.level == 'Expert' %}chip-accent{% endif %}">
+                            {% if skill.name %}{{ skill.name }}{% else %}{{ skill }}{% endif %}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Certifications -->
+                {% if data.certifications %}
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Certifications</div>
+                    {% for cert in data.certifications %}
+                    <div class="cert-item">
+                        <div class="cert-name">{{ cert.name }}</div>
+                        <div class="cert-sub">{{ cert.issuer }}{% if cert.date %} · {{ cert.date }}{% endif %}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Languages -->
+                {% if data.languages %}
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Languages</div>
+                    {% for lang in data.languages %}
+                    <div class="lang-row">
+                        <span class="lang-name">{{ lang.name }}</span>
+                        <span class="lang-lvl">{{ lang.level }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>

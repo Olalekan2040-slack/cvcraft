@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Subscription — CVCraft{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-10">
+    <h1 class="text-3xl font-display font-bold text-white mb-8">Subscription</h1>
+    <div class="bg-dark-card border border-dark-border rounded-2xl p-8 shadow-card">
+        {% if subscription and subscription.is_active %}
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 rounded-xl bg-gold/20 flex items-center justify-center">
+                <i data-lucide="crown" class="w-6 h-6 text-gold"></i>
+            </div>
+            <div>
+                <p class="text-white font-semibold">Pro Plan — Active</p>
+                <p class="text-gray-500 text-sm">{{ subscription.plan|title }} &bull; Renews {{
+                    subscription.current_period_end|date:"N j, Y"|default:"N/A" }}</p>
+            </div>
+        </div>
+        <form method="post" action="{% url 'billing:cancel' %}"
+            onsubmit="return confirm('Cancel subscription? You keep Pro until period end.')">
+            {% csrf_token %}
+            <button type="submit" class="btn-outline text-red-400 border-red-700 hover:bg-red-950/30">Cancel
+                Subscription</button>
+        </form>
+        {% else %}
+        <div class="text-center py-8">
+            <div
+                class="w-16 h-16 rounded-2xl bg-dark-surface border border-dark-border flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="package" class="w-8 h-8 text-gray-500"></i>
+            </div>
+            <h2 class="text-xl font-semibold text-white mb-2">Free Plan</h2>
+            <p class="text-gray-500 mb-6">Upgrade to Pro for unlimited resumes, AI features, and more.</p>
+            <a href="{% url 'billing:pricing' %}" class="btn-gold">Upgrade to Pro</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+{% block title %}Dashboard — CVCraft{% endblock %}
+{% block main_class %}bg-dark-bg{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
+        <div>
+            <h1 class="text-3xl font-display font-bold text-white">My Resumes</h1>
+            <p class="text-gray-500 mt-1">
+                {% if is_pro %}
+                Unlimited resumes &bull; Pro Plan
+                {% else %}
+                {{ resume_count }} / {{ free_limit }} resumes used &bull;
+                <a href="{% url 'billing:pricing' %}" class="text-gold hover:text-gold-light">Upgrade for unlimited</a>
+                {% endif %}
+            </p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'resumes:upload_cv' %}" class="btn-outline">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                Import CV
+            </a>
+            {% if can_create %}
+            <a href="{% url 'resumes:create' %}" class="btn-gold">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                New Resume
+            </a>
+            {% else %}
+            <a href="{% url 'billing:pricing' %}" class="btn-gold">
+                <i data-lucide="zap" class="w-4 h-4"></i>
+                Upgrade to Add More
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pro upgrade banner (free users only) -->
+    {% if not is_pro %}
+    <div
+        class="mb-8 p-5 rounded-2xl border border-gold/20 bg-gold/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gold/20 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="sparkles" class="w-5 h-5 text-gold"></i>
+            </div>
+            <div>
+                <p class="text-white font-medium">Unlock Pro Features</p>
+                <p class="text-gray-400 text-sm">AI writing, unlimited exports, all templates, no watermarks</p>
+            </div>
+        </div>
+        <a href="{% url 'billing:pricing' %}" class="btn-gold flex-shrink-0">Upgrade — $9/mo</a>
+    </div>
+    {% endif %}
+
+    <!-- Resume Grid -->
+    {% if resumes %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="resume-grid">
+        {% for resume in resumes %}
+        <div class="group bg-dark-card border border-dark-border rounded-2xl overflow-hidden hover:border-gold/40 transition-all duration-300 shadow-card hover:shadow-gold"
+            x-data="{ menuOpen: false }">
+            <!-- Thumbnail Preview -->
+            <a href="{% url 'resumes:builder' resume.pk %}"
+                class="block relative aspect-[3/4] bg-white overflow-hidden">
+                <iframe src="{% url 'resumes:preview' resume.pk %}"
+                    class="w-full h-full border-0 pointer-events-none scale-[0.5] origin-top-left"
+                    style="width: 200%; height: 200%;" loading="lazy"></iframe>
+                <div
+                    class="absolute inset-0 bg-gradient-to-t from-dark-card/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span class="bg-gold text-dark-bg text-sm font-semibold px-4 py-2 rounded-lg">
+                        <i data-lucide="edit-3" class="w-4 h-4 inline mr-1"></i> Edit
+                    </span>
+                </div>
+            </a>
+
+            <!-- Card Footer -->
+            <div class="p-4">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-white font-medium truncate" id="title-{{ resume.pk }}">{{ resume.title }}</h3>
+                        <p class="text-gray-500 text-xs mt-0.5">
+                            {{ resume.get_template_slug_display }} &bull;
+                            Updated {{ resume.updated_at|timesince }} ago
+                        </p>
+                    </div>
+                    <!-- Menu -->
+                    <div class="relative">
+                        <button @click="menuOpen = !menuOpen"
+                            class="p-1.5 rounded-lg hover:bg-dark-border text-gray-500 hover:text-white transition-colors">
+                            <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                        </button>
+                        <div x-show="menuOpen" @click.away="menuOpen = false" x-transition
+                            class="absolute right-0 bottom-full mb-1 w-44 bg-dark-surface border border-dark-border rounded-xl shadow-card py-1 z-20">
+                            <a href="{% url 'resumes:builder' resume.pk %}" class="dropdown-item">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i> Edit
+                            </a>
+                            <a href="{% url 'resumes:export_pdf' resume.pk %}" class="dropdown-item">
+                                <i data-lucide="download" class="w-4 h-4"></i> Download PDF
+                            </a>
+                            <button hx-post="{% url 'resumes:toggle_public' resume.pk %}"
+                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' hx-swap="none"
+                                class="dropdown-item w-full text-left">
+                                <i data-lucide="link" class="w-4 h-4"></i>
+                                {% if resume.is_public %}Remove Link{% else %}Share Link{% endif %}
+                            </button>
+                            <form method="post" action="{% url 'resumes:duplicate' resume.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item w-full text-left">
+                                    <i data-lucide="copy" class="w-4 h-4"></i> Duplicate
+                                </button>
+                            </form>
+                            <div class="border-t border-dark-border mt-1 pt-1">
+                                <form method="post" action="{% url 'resumes:delete' resume.pk %}"
+                                    onsubmit="return confirm('Delete \'{{ resume.title }}\'? This cannot be undone.')">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                        class="dropdown-item w-full text-left text-red-400 hover:bg-red-950/30">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i> Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ATS Badge & Public indicator -->
+                <div class="flex items-center gap-2 mt-3">
+                    <span
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-dark-surface text-xs text-gray-500 border border-dark-border">
+                        <div
+                            class="w-1.5 h-1.5 rounded-full {% if resume.template_slug in 'classic,modern,clean,technical,student'|split:',' %}bg-emerald-500{% else %}bg-amber-500{% endif %}">
+                        </div>
+                        {% if resume.template_slug in 'classic,modern,clean,technical,student'|split:',' %}ATS Safe{%
+                        else %}Creative{% endif %}
+                    </span>
+                    {% if resume.is_public %}
+                    <span
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold/10 text-xs text-gold border border-gold/20">
+                        <i data-lucide="link" class="w-3 h-3"></i> Public
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- New Resume Card (if can create) -->
+        {% if can_create %}
+        <a href="{% url 'resumes:create' %}"
+            class="border-2 border-dashed border-dark-border hover:border-gold/40 rounded-2xl aspect-auto min-h-64 flex flex-col items-center justify-center gap-3 text-gray-500 hover:text-gold transition-all duration-300 group cursor-pointer">
+            <div
+                class="w-14 h-14 rounded-2xl bg-dark-card border border-dark-border group-hover:border-gold/30 group-hover:bg-gold/10 flex items-center justify-center transition-all">
+                <i data-lucide="plus" class="w-7 h-7"></i>
+            </div>
+            <div class="text-center">
+                <p class="font-medium">Create New Resume</p>
+                <p class="text-xs text-gray-600 mt-0.5">Click to start building</p>
+            </div>
+        </a>
+        <a href="{% url 'resumes:upload_cv' %}"
+            class="border-2 border-dashed border-dark-border hover:border-gold/40 rounded-2xl aspect-auto min-h-64 flex flex-col items-center justify-center gap-3 text-gray-500 hover:text-gold transition-all duration-300 group cursor-pointer">
+            <div
+                class="w-14 h-14 rounded-2xl bg-dark-card border border-dark-border group-hover:border-gold/30 group-hover:bg-gold/10 flex items-center justify-center transition-all">
+                <i data-lucide="upload" class="w-7 h-7"></i>
+            </div>
+            <div class="text-center">
+                <p class="font-medium">Import Existing CV</p>
+                <p class="text-xs text-gray-600 mt-0.5">Upload PDF or DOCX</p>
+            </div>
+        </a>
+        {% endif %}
+    </div>
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="text-center py-24">
+        <div
+            class="w-24 h-24 rounded-3xl bg-dark-card border border-dark-border flex items-center justify-center mx-auto mb-6">
+            <i data-lucide="file-text" class="w-12 h-12 text-gray-600"></i>
+        </div>
+        <h2 class="text-2xl font-display font-bold text-white mb-3">No resumes yet</h2>
+        <p class="text-gray-500 mb-8 max-w-sm mx-auto">Create your first professional resume. It takes less than 15
+            minutes.</p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a href="{% url 'resumes:create' %}" class="btn-gold-lg">
+                <i data-lucide="plus" class="w-5 h-5"></i>
+                Create My First Resume
+            </a>
+            <a href="{% url 'resumes:upload_cv' %}" class="btn-outline">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                Import Existing CV
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+django>=6.0
+django-allauth>=65.0
+whitenoise>=6.0
+pillow>=10.0
+python-dotenv>=1.0
+weasyprint>=62.0
+openai>=1.0
+stripe>=7.0
+django-crispy-forms>=2.0
+crispy-bootstrap5>=2024.2

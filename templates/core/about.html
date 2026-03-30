@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}About — CVCraft{% endblock %}
+{% block content %}
+<section class="py-20 max-w-3xl mx-auto px-4 text-center">
+    <h1 class="text-5xl font-display font-bold text-white mb-6">About CVCraft</h1>
+    <p class="text-gray-400 text-lg leading-relaxed mb-8">
+        CVCraft was built by job seekers, for job seekers. We believe everyone deserves access to
+        professional-quality resume tools — without expensive design software or hiring a resume writer.
+    </p>
+    <p class="text-gray-400 leading-relaxed">
+        Our mission is simple: help you land interviews faster with beautifully designed, ATS-optimized
+        resumes backed by real AI intelligence. Start free today.
+    </p>
+    <div class="mt-10">
+        <a href="{% url 'account_signup' %}" class="btn-gold-lg">
+            <i data-lucide="zap" class="w-5 h-5"></i> Start Building Free
+        </a>
+    </div>
+</section>
+{% endblock %}

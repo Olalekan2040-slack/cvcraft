@@ -1,0 +1,620 @@
+{% extends 'base.html' %}
+{% load static custom_filters %}
+{% block title %}Builder — {{ resume.title }} — CVCraft{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block extra_head %}
+<!-- SortableJS for drag-and-drop -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+{% endblock %}
+
+{% block main_class %}overflow-hidden{% endblock %}
+
+{% block content %}
+<div class="h-[calc(100vh-64px)] flex flex-col" x-data="builder()" x-init="init()" id="builder-root">
+
+    <!-- Builder Topbar -->
+    <div
+        class="flex items-center justify-between px-4 py-2.5 border-b border-dark-border bg-dark-surface flex-shrink-0">
+        <div class="flex items-center gap-3">
+            <a href="{% url 'resumes:dashboard' %}"
+                class="p-1.5 rounded-lg hover:bg-dark-border text-gray-500 hover:text-white transition-colors"
+                title="Back to Dashboard">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            </a>
+            <!-- Editable Title -->
+            <div class="relative">
+                <input type="text" x-model="resumeTitle" @blur="autoSave()"
+                    class="bg-transparent text-white font-semibold text-sm border-none outline-none border-b border-transparent hover:border-dark-border focus:border-gold px-1 py-0.5 transition-colors min-w-32 max-w-64"
+                    placeholder="Resume title...">
+            </div>
+            <!-- Save status -->
+            <span class="text-xs text-gray-600" x-text="saveStatus"></span>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Template Switcher -->
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" class="btn-sm flex items-center gap-1.5">
+                    <i data-lucide="layout-template" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">Template</span>
+                    <i data-lucide="chevron-down" class="w-3 h-3 text-gray-500"></i>
+                </button>
+                <div x-show="open" @click.away="open = false" x-transition
+                    class="absolute right-0 mt-1 w-52 bg-dark-card border border-dark-border rounded-xl shadow-card py-1 z-30">
+                    {% for slug, name in templates %}
+                    <button @click="switchTemplate('{{ slug }}'); open = false"
+                        class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-dark-hover hover:text-white flex items-center justify-between transition-colors"
+                        :class="{'text-gold': resumeData.template_slug === '{{ slug }}'}">
+                        {{ name }}
+                        <i data-lucide="check" class="w-3.5 h-3.5 text-gold"
+                            x-show="currentTemplate === '{{ slug }}'"></i>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Customization -->
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" class="btn-sm">
+                    <i data-lucide="palette" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">Style</span>
+                </button>
+                <div x-show="open" @click.away="open = false" x-transition
+                    class="absolute right-0 mt-1 w-64 bg-dark-card border border-dark-border rounded-xl shadow-card p-4 z-30 space-y-4">
+                    <div>
+                        <label class="text-xs text-gray-400 block mb-2">Accent Color</label>
+                        <div class="flex gap-2 flex-wrap">
+                            {% for color in "#C9A84C,#E8C76A,#4F9CF9,#10B981,#EF4444,#8B5CF6,#1F2937"|split:"," %}
+                            <button @click="accentColor = '{{ color }}'; updatePreview()"
+                                class="w-7 h-7 rounded-full border-2 transition-all"
+                                :class="accentColor === '{{ color }}' ? 'border-white scale-110' : 'border-transparent'"
+                                style="background-color: '{{ color }}'"></button>
+                            {% endfor %}
+                            <input type="color" x-model="accentColor" @change="updatePreview()"
+                                class="w-7 h-7 rounded-full border-0 cursor-pointer bg-transparent">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 block mb-2">Font</label>
+                        <select x-model="fontFamily" @change="updatePreview()" class="form-input-sm w-full">
+                            <option value="Inter">Inter (Modern)</option>
+                            <option value="Georgia">Georgia (Classic)</option>
+                            <option value="Merriweather">Merriweather (Elegant)</option>
+                            <option value="Roboto">Roboto (Clean)</option>
+                            <option value="Lato">Lato (Professional)</option>
+                            <option value="Open Sans">Open Sans (Friendly)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ATS Score -->
+            <button @click="checkATS()" class="btn-sm">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">ATS Score</span>
+                <span x-show="atsScore !== null" class="ml-1 px-1.5 py-0.5 rounded text-xs font-bold"
+                    :class="atsScore >= 80 ? 'bg-emerald-500/20 text-emerald-400' : atsScore >= 50 ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'"
+                    x-text="atsScore + '%'"></span>
+            </button>
+
+            <!-- Save -->
+            <button @click="saveResume()" :disabled="saving" class="btn-sm border-gold/40 text-gold hover:bg-gold/10">
+                <i data-lucide="save" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">Save</span>
+            </button>
+
+            <!-- Export PDF -->
+            <a href="{% url 'resumes:export_pdf' resume.pk %}" class="btn-gold-sm">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">PDF</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Builder Body: Editor + Preview -->
+    <div class="flex-1 flex overflow-hidden">
+
+        <!-- ── LEFT: Section Nav + Editor ── -->
+        <div
+            class="w-full md:w-[420px] lg:w-[480px] flex flex-col border-r border-dark-border flex-shrink-0 overflow-hidden">
+
+            <!-- Section Tab Nav -->
+            <div
+                class="flex items-center gap-1 px-3 py-2 border-b border-dark-border bg-dark-surface overflow-x-auto no-scrollbar">
+                {% for section, label, icon in sections %}
+                <button @click="activeSection = '{{ section }}'"
+                    :class="activeSection === '{{ section }}' ? 'bg-gold/15 text-gold border-gold/40' : 'text-gray-500 border-transparent hover:text-gray-300'"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap flex-shrink-0">
+                    <i data-lucide="{{ icon }}" class="w-3.5 h-3.5"></i>
+                    {{ label }}
+                </button>
+                {% endfor %}
+            </div>
+
+            <!-- Section Editor Panels -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+
+                <!-- Personal Info -->
+                <div x-show="activeSection === 'personal'" class="space-y-4 animate-fade-in">
+                    <h2 class="section-heading">Personal Information</h2>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="col-span-2">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" x-model="data.personal.full_name" @input="debouncedPreview()"
+                                class="form-input" placeholder="John Smith">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="form-label">Professional Title</label>
+                            <input type="text" x-model="data.personal.job_title" @input="debouncedPreview()"
+                                class="form-input" placeholder="Senior Software Engineer">
+                        </div>
+                        <div>
+                            <label class="form-label">Email</label>
+                            <input type="email" x-model="data.personal.email" @input="debouncedPreview()"
+                                class="form-input" placeholder="john@example.com">
+                        </div>
+                        <div>
+                            <label class="form-label">Phone</label>
+                            <input type="tel" x-model="data.personal.phone" @input="debouncedPreview()"
+                                class="form-input" placeholder="+1 (555) 000-0000">
+                        </div>
+                        <div>
+                            <label class="form-label">Location</label>
+                            <input type="text" x-model="data.personal.location" @input="debouncedPreview()"
+                                class="form-input" placeholder="New York, NY">
+                        </div>
+                        <div>
+                            <label class="form-label">Website / Portfolio</label>
+                            <input type="url" x-model="data.personal.website" @input="debouncedPreview()"
+                                class="form-input" placeholder="portfolio.com">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="form-label">LinkedIn URL</label>
+                            <input type="url" x-model="data.personal.linkedin" @input="debouncedPreview()"
+                                class="form-input" placeholder="linkedin.com/in/yourname">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="form-label">GitHub / Portfolio URL</label>
+                            <input type="url" x-model="data.personal.github" @input="debouncedPreview()"
+                                class="form-input" placeholder="github.com/username">
+                        </div>
+                        <div class="col-span-2">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="form-label mb-0">Professional Summary</label>
+                                <button
+                                    @click="aiGenerate('summary', data.personal.job_title + ' ' + data.personal.full_name)"
+                                    class="ai-btn">
+                                    <i data-lucide="sparkles" class="w-3 h-3"></i> AI Write
+                                </button>
+                            </div>
+                            <textarea x-model="data.personal.summary" @input="debouncedPreview()" rows="4"
+                                class="form-input resize-none"
+                                placeholder="Write a compelling 2-3 sentence summary of your professional background and key achievements..."></textarea>
+                            <p class="text-xs text-gray-600 mt-1"
+                                x-text="data.personal.summary?.length + ' / 400 chars'"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Work Experience -->
+                <div x-show="activeSection === 'experience'" class="space-y-3 animate-fade-in">
+                    <div class="flex items-center justify-between">
+                        <h2 class="section-heading">Work Experience</h2>
+                        <button @click="addExperience()" class="btn-add">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add
+                        </button>
+                    </div>
+                    <div id="experience-list">
+                        <template x-for="(exp, idx) in data.experience" :key="idx">
+                            <div class="section-item" :data-index="idx">
+                                <div class="section-item-header" @click="exp._open = !exp._open">
+                                    <div class="flex items-center gap-2 flex-1 min-w-0">
+                                        <i data-lucide="grip-vertical"
+                                            class="w-4 h-4 text-gray-600 drag-handle cursor-grab flex-shrink-0"></i>
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-medium text-white truncate"
+                                                x-text="exp.position || 'New Position'"></p>
+                                            <p class="text-xs text-gray-500 truncate"
+                                                x-text="exp.company || 'Company Name'"></p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-1 flex-shrink-0">
+                                        <button @click.stop="removeItem(data.experience, idx)"
+                                            class="p-1 text-gray-600 hover:text-red-400 transition-colors">
+                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform"
+                                            :class="exp._open ? 'rotate-180' : ''"></i>
+                                    </div>
+                                </div>
+                                <div x-show="exp._open" x-transition class="mt-3 space-y-3">
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div class="col-span-2">
+                                            <label class="form-label">Job Title / Position</label>
+                                            <input type="text" x-model="exp.position" @input="debouncedPreview()"
+                                                class="form-input" placeholder="Senior Developer">
+                                        </div>
+                                        <div class="col-span-2">
+                                            <label class="form-label">Company</label>
+                                            <input type="text" x-model="exp.company" @input="debouncedPreview()"
+                                                class="form-input" placeholder="Acme Corp">
+                                        </div>
+                                        <div>
+                                            <label class="form-label">Start Date</label>
+                                            <input type="text" x-model="exp.start_date" @input="debouncedPreview()"
+                                                class="form-input" placeholder="Jan 2022">
+                                        </div>
+                                        <div>
+                                            <label class="form-label">End Date</label>
+                                            <input type="text" x-model="exp.end_date" @input="debouncedPreview()"
+                                                class="form-input" placeholder="Present">
+                                        </div>
+                                        <div class="col-span-2">
+                                            <label class="form-label">Location</label>
+                                            <input type="text" x-model="exp.location" @input="debouncedPreview()"
+                                                class="form-input" placeholder="San Francisco, CA">
+                                        </div>
+                                        <div class="col-span-2">
+                                            <label class="form-label">Description</label>
+                                            <textarea x-model="exp.description" @input="debouncedPreview()" rows="3"
+                                                class="form-input resize-none"
+                                                placeholder="Brief overview of your role..."></textarea>
+                                        </div>
+                                        <!-- Bullet Points -->
+                                        <div class="col-span-2">
+                                            <div class="flex items-center justify-between mb-2">
+                                                <label class="form-label mb-0">Key Achievements / Bullets</label>
+                                                <div class="flex gap-2">
+                                                    <button @click="aiGenerate('improve', exp.description, idx)"
+                                                        class="ai-btn">
+                                                        <i data-lucide="sparkles" class="w-3 h-3"></i> AI
+                                                    </button>
+                                                    <button @click="addBullet(exp)" class="btn-add text-xs">
+                                                        <i data-lucide="plus" class="w-3 h-3"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <template x-for="(bullet, bi) in exp.bullets" :key="bi">
+                                                <div class="flex gap-2 mb-2">
+                                                    <span class="text-gold mt-2.5 text-sm flex-shrink-0">▸</span>
+                                                    <input type="text" x-model="exp.bullets[bi]"
+                                                        @input="debouncedPreview()" class="form-input flex-1"
+                                                        placeholder="Achieved X by doing Y, resulting in Z%...">
+                                                    <button @click="exp.bullets.splice(bi, 1); debouncedPreview()"
+                                                        class="text-gray-600 hover:text-red-400 mt-2">
+                                                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                                    </button>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <button x-show="data.experience.length === 0" @click="addExperience()"
+                        class="w-full py-8 border-2 border-dashed border-dark-border rounded-xl text-gray-600 hover:border-gold/40 hover:text-gold transition-all text-sm">
+                        <i data-lucide="plus-circle" class="w-5 h-5 mx-auto mb-2"></i>
+                        Add your first experience
+                    </button>
+                </div>
+
+                <!-- Education -->
+                <div x-show="activeSection === 'education'" class="space-y-3 animate-fade-in">
+                    <div class="flex items-center justify-between">
+                        <h2 class="section-heading">Education</h2>
+                        <button @click="addEducation()" class="btn-add"><i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            Add</button>
+                    </div>
+                    <template x-for="(edu, idx) in data.education" :key="idx">
+                        <div class="section-item">
+                            <div class="section-item-header" @click="edu._open = !edu._open">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-white truncate" x-text="edu.degree || 'Degree'">
+                                    </p>
+                                    <p class="text-xs text-gray-500 truncate" x-text="edu.institution || 'Institution'">
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button @click.stop="removeItem(data.education, idx)"
+                                        class="p-1 text-gray-600 hover:text-red-400">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"
+                                        :class="edu._open ? 'rotate-180' : ''"></i>
+                                </div>
+                            </div>
+                            <div x-show="edu._open" x-transition class="mt-3 space-y-3">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="col-span-2"><label class="form-label">Degree / Certificate</label>
+                                        <input type="text" x-model="edu.degree" @input="debouncedPreview()"
+                                            class="form-input" placeholder="Bachelor of Science in Computer Science">
+                                    </div>
+                                    <div class="col-span-2"><label class="form-label">Institution</label>
+                                        <input type="text" x-model="edu.institution" @input="debouncedPreview()"
+                                            class="form-input" placeholder="MIT">
+                                    </div>
+                                    <div><label class="form-label">From</label>
+                                        <input type="text" x-model="edu.start_date" @input="debouncedPreview()"
+                                            class="form-input" placeholder="2018">
+                                    </div>
+                                    <div><label class="form-label">To</label>
+                                        <input type="text" x-model="edu.end_date" @input="debouncedPreview()"
+                                            class="form-input" placeholder="2022">
+                                    </div>
+                                    <div><label class="form-label">GPA (optional)</label>
+                                        <input type="text" x-model="edu.gpa" @input="debouncedPreview()"
+                                            class="form-input" placeholder="3.8 / 4.0">
+                                    </div>
+                                    <div><label class="form-label">Location</label>
+                                        <input type="text" x-model="edu.location" @input="debouncedPreview()"
+                                            class="form-input" placeholder="Cambridge, MA">
+                                    </div>
+                                    <div class="col-span-2"><label class="form-label">Achievements / Activities</label>
+                                        <textarea x-model="edu.achievements" @input="debouncedPreview()" rows="2"
+                                            class="form-input resize-none"
+                                            placeholder="Dean's List, Relevant coursework..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Skills -->
+                <div x-show="activeSection === 'skills'" class="space-y-3 animate-fade-in">
+                    <h2 class="section-heading">Skills</h2>
+                    <div class="flex gap-2">
+                        <input type="text" x-model="newSkill" @keydown.enter.prevent="addSkill()"
+                            class="form-input flex-1" placeholder="e.g. Python, Project Management...">
+                        <button @click="addSkill()" class="btn-gold-sm flex-shrink-0">Add</button>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <template x-for="(skill, idx) in data.skills" :key="idx">
+                            <span
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-dark-surface border border-dark-border text-sm text-gray-300">
+                                <span x-text="skill.name || skill"></span>
+                                <button @click="data.skills.splice(idx, 1); debouncedPreview()"
+                                    class="text-gray-600 hover:text-red-400 flex-shrink-0">
+                                    <i data-lucide="x" class="w-3 h-3"></i>
+                                </button>
+                            </span>
+                        </template>
+                    </div>
+                    <p x-show="data.skills.length === 0" class="text-gray-600 text-sm text-center py-4">Add skills to
+                        highlight your expertise</p>
+                </div>
+
+                <!-- Certifications -->
+                <div x-show="activeSection === 'certifications'" class="space-y-3 animate-fade-in">
+                    <div class="flex items-center justify-between">
+                        <h2 class="section-heading">Certifications</h2>
+                        <button @click="addCertification()" class="btn-add"><i data-lucide="plus"
+                                class="w-3.5 h-3.5"></i> Add</button>
+                    </div>
+                    <template x-for="(cert, idx) in data.certifications" :key="idx">
+                        <div class="section-item">
+                            <div class="flex items-center gap-3">
+                                <div class="flex-1 space-y-2">
+                                    <input type="text" x-model="cert.name" @input="debouncedPreview()"
+                                        class="form-input" placeholder="AWS Certified Solutions Architect">
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input type="text" x-model="cert.issuer" @input="debouncedPreview()"
+                                            class="form-input" placeholder="Amazon Web Services">
+                                        <input type="text" x-model="cert.date" @input="debouncedPreview()"
+                                            class="form-input" placeholder="2024">
+                                    </div>
+                                </div>
+                                <button @click="removeItem(data.certifications, idx)"
+                                    class="text-gray-600 hover:text-red-400 flex-shrink-0"><i data-lucide="trash-2"
+                                        class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Projects -->
+                <div x-show="activeSection === 'projects'" class="space-y-3 animate-fade-in">
+                    <div class="flex items-center justify-between">
+                        <h2 class="section-heading">Projects</h2>
+                        <button @click="addProject()" class="btn-add"><i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            Add</button>
+                    </div>
+                    <template x-for="(proj, idx) in data.projects" :key="idx">
+                        <div class="section-item">
+                            <div class="section-item-header" @click="proj._open = !proj._open">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-white truncate"
+                                        x-text="proj.name || 'Project Name'"></p>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button @click.stop="removeItem(data.projects, idx)"
+                                        class="p-1 text-gray-600 hover:text-red-400"><i data-lucide="trash-2"
+                                            class="w-3.5 h-3.5"></i></button>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"
+                                        :class="proj._open ? 'rotate-180' : ''"></i>
+                                </div>
+                            </div>
+                            <div x-show="proj._open" x-transition class="mt-3 space-y-2">
+                                <input type="text" x-model="proj.name" @input="debouncedPreview()" class="form-input"
+                                    placeholder="Project Name">
+                                <input type="text" x-model="proj.technologies" @input="debouncedPreview()"
+                                    class="form-input" placeholder="Technologies: React, Python, AWS">
+                                <input type="url" x-model="proj.url" @input="debouncedPreview()" class="form-input"
+                                    placeholder="https://github.com/...">
+                                <textarea x-model="proj.description" @input="debouncedPreview()" rows="3"
+                                    class="form-input resize-none"
+                                    placeholder="Describe what the project does and your impact..."></textarea>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Languages -->
+                <div x-show="activeSection === 'languages'" class="space-y-3 animate-fade-in">
+                    <div class="flex items-center justify-between">
+                        <h2 class="section-heading">Languages</h2>
+                        <button @click="addLanguage()" class="btn-add"><i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            Add</button>
+                    </div>
+                    <template x-for="(lang, idx) in data.languages" :key="idx">
+                        <div class="section-item">
+                            <div class="flex gap-3">
+                                <input type="text" x-model="lang.name" @input="debouncedPreview()"
+                                    class="form-input flex-1" placeholder="English">
+                                <select x-model="lang.level" @change="debouncedPreview()" class="form-input w-36">
+                                    <option value="Native">Native</option>
+                                    <option value="Fluent">Fluent</option>
+                                    <option value="Advanced">Advanced</option>
+                                    <option value="Intermediate">Intermediate</option>
+                                    <option value="Basic">Basic</option>
+                                </select>
+                                <button @click="removeItem(data.languages, idx)"
+                                    class="text-gray-600 hover:text-red-400"><i data-lucide="trash-2"
+                                        class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ── RIGHT: Live Preview ── -->
+        <div class="flex-1 bg-gray-200 overflow-auto md:block hidden relative" id="preview-pane">
+            <div class="absolute top-3 right-3 z-10 flex gap-2">
+                <button @click="previewScale = Math.min(1.2, previewScale + 0.1)"
+                    class="p-1.5 bg-dark-card/80 backdrop-blur rounded-lg border border-dark-border text-gray-400 hover:text-white">
+                    <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+                </button>
+                <button @click="previewScale = Math.max(0.4, previewScale - 0.1)"
+                    class="p-1.5 bg-dark-card/80 backdrop-blur rounded-lg border border-dark-border text-gray-400 hover:text-white">
+                    <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
+                </button>
+            </div>
+            <div class="min-h-full flex items-start justify-center p-8">
+                <div class="origin-top transition-transform duration-200" :style="`transform: scale(${previewScale})`">
+                    <div class="w-[794px] min-h-[1123px] bg-white shadow-2xl" id="resume-preview">
+                        <!-- Preview will be rendered here via HTMX / fetch -->
+                        <iframe id="preview-iframe" src="{% url 'resumes:preview' resume.pk %}"
+                            class="w-full min-h-[1123px] border-0" style="min-height: 1123px"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ATS Score Modal -->
+    <div x-show="atsModal" x-transition class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+        @click.self="atsModal = false">
+        <div
+            class="bg-dark-card border border-dark-border rounded-2xl p-6 max-w-md w-full shadow-card animate-slide-up">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-white">ATS Compatibility Score</h3>
+                <button @click="atsModal = false" class="text-gray-500 hover:text-white"><i data-lucide="x"
+                        class="w-5 h-5"></i></button>
+            </div>
+
+            <!-- Score Circle -->
+            <div class="text-center mb-6">
+                <div class="relative w-28 h-28 mx-auto">
+                    <svg class="w-28 h-28 -rotate-90" viewBox="0 0 36 36">
+                        <circle cx="18" cy="18" r="15.9" fill="none" stroke="#232B3A" stroke-width="3"></circle>
+                        <circle cx="18" cy="18" r="15.9" fill="none" stroke-width="3"
+                            :stroke="atsScore >= 80 ? '#10B981' : atsScore >= 50 ? '#F59E0B' : '#EF4444'"
+                            stroke-dasharray="100" :stroke-dashoffset="100 - (atsScore || 0)" stroke-linecap="round"
+                            class="transition-all duration-700"></circle>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div>
+                            <div class="text-2xl font-bold text-white" x-text="(atsScore || 0) + '%'"></div>
+                        </div>
+                    </div>
+                </div>
+                <p class="mt-2 text-sm font-medium"
+                    :class="atsScore >= 80 ? 'text-emerald-400' : atsScore >= 50 ? 'text-amber-400' : 'text-red-400'"
+                    x-text="atsScore >= 80 ? 'Excellent! ATS Ready' : atsScore >= 50 ? 'Good — Room to Improve' : 'Needs Work'">
+                </p>
+            </div>
+
+            <!-- Issues -->
+            <div x-show="atsIssues.length > 0" class="mb-4">
+                <p class="text-sm font-medium text-red-400 mb-2">Issues to Fix:</p>
+                <ul class="space-y-1">
+                    <template x-for="issue in atsIssues">
+                        <li class="flex items-start gap-2 text-sm text-gray-400">
+                            <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5"></i>
+                            <span x-text="issue"></span>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+
+            <!-- Tips -->
+            <div x-show="atsTips.length > 0">
+                <p class="text-sm font-medium text-gold mb-2">Tips to Improve:</p>
+                <ul class="space-y-1">
+                    <template x-for="tip in atsTips">
+                        <li class="flex items-start gap-2 text-sm text-gray-400">
+                            <i data-lucide="lightbulb" class="w-3.5 h-3.5 text-gold flex-shrink-0 mt-0.5"></i>
+                            <span x-text="tip"></span>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Result Modal -->
+    <div x-show="aiModal" x-transition class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+        @click.self="aiModal = false">
+        <div
+            class="bg-dark-card border border-dark-border rounded-2xl p-6 max-w-lg w-full shadow-card animate-slide-up">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-gold/20 flex items-center justify-center">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-gold"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-white">AI Suggestion</h3>
+                </div>
+                <button @click="aiModal = false" class="text-gray-500 hover:text-white"><i data-lucide="x"
+                        class="w-5 h-5"></i></button>
+            </div>
+            <div x-show="aiLoading" class="text-center py-8">
+                <div class="loading-spinner mx-auto mb-3"></div>
+                <p class="text-gray-400 text-sm">Generating with AI...</p>
+            </div>
+            <div x-show="!aiLoading && aiResult" class="space-y-4">
+                <div class="p-4 rounded-xl bg-dark-surface border border-dark-border text-gray-300 text-sm leading-relaxed whitespace-pre-wrap"
+                    x-text="aiResult"></div>
+                <div class="flex gap-3">
+                    <button @click="applyAIResult()" class="btn-gold flex-1">Apply This</button>
+                    <button @click="aiModal = false" class="btn-outline flex-1">Dismiss</button>
+                </div>
+            </div>
+            <div x-show="aiError" class="text-red-400 text-sm py-4">
+                <i data-lucide="alert-circle" class="w-4 h-4 inline mr-1"></i>
+                <span x-text="aiError"></span>
+                <p class="mt-2 text-gray-500 text-xs">Upgrade to Pro to unlock AI features.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const RESUME_DATA = {{ resume_data_json| safe }};
+    const RESUME_PK = {{ resume.pk }};
+    const RESUME_TITLE = "{{ resume.title|escapejs }}";
+    const CURRENT_TEMPLATE = "{{ resume.template_slug }}";
+    const ACCENT_COLOR = "{{ resume.accent_color }}";
+    const FONT_FAMILY = "{{ resume.font_family }}";
+    const CSRF_TOKEN = "{{ csrf_token }}";
+    const PREVIEW_URL = "{% url 'resumes:preview' resume.pk %}";
+    const SAVE_URL = "{% url 'resumes:save' resume.pk %}";
+    const ATS_URL = "{% url 'resumes:ats_score' resume.pk %}";
+    const AI_URL = "{% url 'resumes:ai_generate' %}";
+</script>
+<script src="{% static 'js/builder.js' %}"></script>
+{% endblock %}

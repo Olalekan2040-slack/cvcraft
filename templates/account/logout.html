@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Sign Out — CVCraft{% endblock %}
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center px-4">
+    <div class="text-center max-w-sm">
+        <div
+            class="w-16 h-16 rounded-2xl bg-dark-card border border-dark-border flex items-center justify-center mx-auto mb-6">
+            <i data-lucide="log-out" class="w-7 h-7 text-gray-400"></i>
+        </div>
+        <h1 class="text-2xl font-display font-bold text-white mb-2">Sign Out</h1>
+        <p class="text-gray-500 mb-8">Are you sure you want to sign out?</p>
+        <form method="post" action="{% url 'account_logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-gold">Sign Out</button>
+        </form>
+        <a href="{% url 'resumes:dashboard' %}" class="block mt-4 text-gray-500 hover:text-white text-sm">Cancel</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+<nav class="sticky top-0 z-40 border-b border-dark-border bg-dark-bg/90 backdrop-blur-md"
+    x-data="{ mobileOpen: false }">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+
+            <!-- Logo -->
+            <a href="{% url 'landing' %}" class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-gold flex items-center justify-center shadow-gold">
+                    <i data-lucide="file-text" class="w-4 h-4 text-dark-bg"></i>
+                </div>
+                <span class="text-xl font-display font-bold text-white">CV<span class="text-gold">Craft</span></span>
+            </a>
+
+            <!-- Desktop Nav -->
+            <div class="hidden md:flex items-center gap-1">
+                {% if user.is_authenticated %}
+                <a href="{% url 'resumes:dashboard' %}" class="nav-link">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+                </a>
+                <a href="{% url 'resumes:create' %}" class="nav-link">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> New Resume
+                </a>
+                <a href="{% url 'billing:pricing' %}" class="nav-link">
+                    <i data-lucide="zap" class="w-4 h-4"></i> Upgrade
+                </a>
+                <div class="relative ml-2" x-data="{ open: false }">
+                    <button @click="open = !open"
+                        class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-dark-border hover:border-gold/40 transition-all">
+                        <div
+                            class="w-7 h-7 rounded-full bg-gold/20 border border-gold/30 flex items-center justify-center text-gold font-semibold text-sm">
+                            {{ user.first_name|first|default:user.email|first|upper }}
+                        </div>
+                        <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-400"></i>
+                    </button>
+                    <div x-show="open" @click.away="open = false" x-transition
+                        class="absolute right-0 mt-2 w-52 bg-dark-card border border-dark-border rounded-xl shadow-card py-1 z-50">
+                        <div class="px-4 py-2.5 border-b border-dark-border">
+                            <p class="text-sm font-medium text-white truncate">{{ user.get_full_name|default:user.email
+                                }}</p>
+                            <p class="text-xs text-gray-500 truncate">{{ user.email }}</p>
+                        </div>
+                        <a href="{% url 'accounts:profile' %}" class="dropdown-item">
+                            <i data-lucide="user" class="w-4 h-4"></i> Profile Settings
+                        </a>
+                        <a href="{% url 'billing:manage' %}" class="dropdown-item">
+                            <i data-lucide="credit-card" class="w-4 h-4"></i> Subscription
+                        </a>
+                        <div class="border-t border-dark-border mt-1 pt-1">
+                            <form method="post" action="{% url 'account_logout' %}">
+                                {% csrf_token %}
+                                <button type="submit"
+                                    class="dropdown-item w-full text-left text-red-400 hover:bg-red-950/30">
+                                    <i data-lucide="log-out" class="w-4 h-4"></i> Sign Out
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <a href="{% url 'billing:pricing' %}" class="nav-link">Pricing</a>
+                <a href="{% url 'account_login' %}" class="nav-link">Sign In</a>
+                <a href="{% url 'account_signup' %}" class="btn-gold ml-2">
+                    Get Started Free
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Mobile Menu Button -->
+            <button @click="mobileOpen = !mobileOpen" class="md:hidden p-2 rounded-lg text-gray-400 hover:text-white">
+                <i data-lucide="menu" class="w-5 h-5" x-show="!mobileOpen"></i>
+                <i data-lucide="x" class="w-5 h-5" x-show="mobileOpen"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div x-show="mobileOpen" x-transition class="md:hidden border-t border-dark-border bg-dark-surface">
+        <div class="px-4 py-3 space-y-1">
+            {% if user.is_authenticated %}
+            <a href="{% url 'resumes:dashboard' %}" class="mobile-nav-link">Dashboard</a>
+            <a href="{% url 'resumes:create' %}" class="mobile-nav-link">New Resume</a>
+            <a href="{% url 'billing:pricing' %}" class="mobile-nav-link">Upgrade</a>
+            <a href="{% url 'accounts:profile' %}" class="mobile-nav-link">Profile</a>
+            <form method="post" action="{% url 'account_logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="mobile-nav-link w-full text-left text-red-400">Sign Out</button>
+            </form>
+            {% else %}
+            <a href="{% url 'billing:pricing' %}" class="mobile-nav-link">Pricing</a>
+            <a href="{% url 'account_login' %}" class="mobile-nav-link">Sign In</a>
+            <a href="{% url 'account_signup' %}" class="mobile-nav-link text-gold">Get Started Free</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>

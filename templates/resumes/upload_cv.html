@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+{% block title %}Upload Your CV — CVCraft{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-12">
+
+    <!-- Header -->
+    <div class="text-center mb-10">
+        <div
+            class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold/30 bg-gold/10 text-gold text-sm font-medium mb-5">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            Powered by Gemini AI
+        </div>
+        <h1 class="text-4xl font-display font-bold text-white mb-3">Import Your Existing CV</h1>
+        <p class="text-gray-400 text-lg max-w-xl mx-auto">
+            Upload your old PDF or Word CV and we'll automatically extract all your information
+            and rebuild it in your chosen style — ready to edit in seconds.
+        </p>
+    </div>
+
+    <!-- Upload Card -->
+    <div class="bg-dark-card border border-dark-border rounded-2xl shadow-card overflow-hidden" x-data="cvUploader()"
+        x-init="init()">
+
+        <!-- Step 1: File Drop -->
+        <div x-show="step === 1" class="p-8">
+            <div id="drop-zone" @dragover.prevent="dragging = true" @dragleave.prevent="dragging = false"
+                @drop.prevent="handleDrop($event)"
+                :class="dragging ? 'border-gold bg-gold/10' : 'border-dark-border hover:border-gold/40 hover:bg-dark-hover'"
+                class="border-2 border-dashed rounded-xl p-10 text-center transition-all cursor-pointer"
+                @click="$refs.fileInput.click()">
+
+                <input type="file" x-ref="fileInput" class="hidden" accept=".pdf,.docx"
+                    @change="handleFileSelect($event)">
+
+                <div
+                    class="w-16 h-16 rounded-2xl bg-gold/15 border border-gold/25 flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="upload-cloud" class="w-8 h-8 text-gold"></i>
+                </div>
+
+                <template x-if="!selectedFile">
+                    <div>
+                        <p class="text-white font-semibold text-lg mb-1">Drop your CV here</p>
+                        <p class="text-gray-400 text-sm mb-4">or click to browse files</p>
+                        <div class="flex items-center justify-center gap-4 text-xs text-gray-500">
+                            <span
+                                class="flex items-center gap-1.5 px-3 py-1 bg-dark-surface rounded-full border border-dark-border">
+                                <i data-lucide="file-text" class="w-3.5 h-3.5 text-red-400"></i> PDF
+                            </span>
+                            <span
+                                class="flex items-center gap-1.5 px-3 py-1 bg-dark-surface rounded-full border border-dark-border">
+                                <i data-lucide="file-text" class="w-3.5 h-3.5 text-blue-400"></i> DOCX
+                            </span>
+                            <span class="text-gray-600">Max 5 MB</span>
+                        </div>
+                    </div>
+                </template>
+
+                <template x-if="selectedFile">
+                    <div>
+                        <p class="text-gold font-semibold" x-text="selectedFile.name"></p>
+                        <p class="text-gray-400 text-sm mt-1" x-text="formatSize(selectedFile.size)"></p>
+                        <p class="text-xs text-gray-500 mt-2">Click to choose a different file</p>
+                    </div>
+                </template>
+            </div>
+
+        </div>
+
+        <!-- Step 2: Choose Template -->
+        <div x-show="step === 2" class="p-8">
+            <h2 class="text-white font-semibold text-lg mb-1">Choose a template style</h2>
+            <p class="text-gray-400 text-sm mb-6">Your extracted information will be formatted in the style you pick.
+                You can change it later.</p>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {% for slug, name in templates %}
+                <button @click="selectedTemplate = '{{ slug }}'"
+                    :class="selectedTemplate === '{{ slug }}' ? 'border-gold bg-gold/10 text-gold' : 'border-dark-border text-gray-300 hover:border-gold/40 hover:text-white'"
+                    class="p-4 rounded-xl border transition-all text-left">
+                    <div class="font-medium text-sm">{{ name }}</div>
+                    <div class="text-xs text-gray-500 mt-0.5">
+                        {% if slug == 'modern' %}Two-column, clean layout
+                        {% elif slug == 'classic' %}Traditional, serif style
+                        {% elif slug == 'executive' %}Dark sidebar, premium feel
+                        {% elif slug == 'technical' %}Developer-focused, monospace accents
+                        {% elif slug == 'creative' %}Bold colours and layout
+                        {% elif slug == 'student' %}Entry-level friendly
+                        {% elif slug == 'elegant' %}Refined, minimal
+                        {% elif slug == 'bold' %}High-impact design
+                        {% elif slug == 'clean' %}ATS-safe, simple
+                        {% elif slug == 'timeline' %}Chronological timeline view
+                        {% else %}Professional layout{% endif %}
+                    </div>
+                    <div x-show="selectedTemplate === '{{ slug }}'"
+                        class="mt-2 flex items-center gap-1 text-xs text-gold">
+                        <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Selected
+                    </div>
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Step 3: Processing -->
+        <div x-show="step === 3" class="p-8 text-center">
+            <div
+                class="w-16 h-16 rounded-2xl bg-gold/15 border border-gold/25 flex items-center justify-center mx-auto mb-5">
+                <div class="w-8 h-8 border-2 border-gold/40 border-t-gold rounded-full animate-spin"></div>
+            </div>
+            <h2 class="text-white font-semibold text-xl mb-2">Analysing your CV…</h2>
+            <p class="text-gray-400 text-sm" x-text="processingMsg"></p>
+            <div class="mt-6 space-y-2 text-left max-w-sm mx-auto">
+                <div class="flex items-center gap-3 text-sm"
+                    :class="progress >= 1 ? 'text-emerald-400' : 'text-gray-500'">
+                    <i data-lucide="check" class="w-4 h-4" x-show="progress >= 1"></i>
+                    <i data-lucide="circle" class="w-4 h-4" x-show="progress < 1"></i>
+                    Reading document
+                </div>
+                <div class="flex items-center gap-3 text-sm"
+                    :class="progress >= 2 ? 'text-emerald-400' : progress === 1 ? 'text-gold' : 'text-gray-500'">
+                    <i data-lucide="check" class="w-4 h-4" x-show="progress >= 2"></i>
+                    <div class="w-4 h-4 border border-gold/60 border-t-gold rounded-full animate-spin"
+                        x-show="progress === 1"></div>
+                    <i data-lucide="circle" class="w-4 h-4" x-show="progress < 1"></i>
+                    Extracting information with AI
+                </div>
+                <div class="flex items-center gap-3 text-sm"
+                    :class="progress >= 3 ? 'text-emerald-400' : progress === 2 ? 'text-gold' : 'text-gray-500'">
+                    <i data-lucide="check" class="w-4 h-4" x-show="progress >= 3"></i>
+                    <div class="w-4 h-4 border border-gold/60 border-t-gold rounded-full animate-spin"
+                        x-show="progress === 2"></div>
+                    <i data-lucide="circle" class="w-4 h-4" x-show="progress < 2"></i>
+                    Building your new resume
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Done -->
+        <div x-show="step === 4" class="p-8 text-center">
+            <div
+                class="w-16 h-16 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center mx-auto mb-5">
+                <i data-lucide="check-circle" class="w-8 h-8 text-emerald-400"></i>
+            </div>
+            <h2 class="text-white font-semibold text-xl mb-2">Resume Created!</h2>
+            <p class="text-gray-400 text-sm mb-6" x-text="`'${resultName}' is ready. Opening the builder…`"></p>
+            <div class="w-8 h-8 border-2 border-gold/40 border-t-gold rounded-full animate-spin mx-auto"></div>
+        </div>
+
+        <!-- Global Error Banner (visible on any step) -->
+        <div x-show="errorMsg" x-transition
+            class="mx-8 mb-4 p-3 bg-red-950/60 border border-red-800 rounded-xl text-red-300 text-sm flex items-start gap-2">
+            <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
+            <span x-text="errorMsg"></span>
+        </div>
+
+        <!-- Navigation Footer -->
+        <div class="px-8 py-5 border-t border-dark-border bg-dark-surface/50 flex items-center justify-between"
+            x-show="step < 3">
+            <button x-show="step > 1" @click="step--" class="btn-outline">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back
+            </button>
+            <div x-show="step === 1"></div>
+
+            <div class="flex items-center gap-3">
+                <!-- Step indicators -->
+                <div class="flex gap-1.5">
+                    <div class="w-2 h-2 rounded-full" :class="step >= 1 ? 'bg-gold' : 'bg-dark-border'"></div>
+                    <div class="w-2 h-2 rounded-full" :class="step >= 2 ? 'bg-gold' : 'bg-dark-border'"></div>
+                </div>
+
+                <button x-show="step === 1" @click="nextStep()" :disabled="!selectedFile" class="btn-gold"
+                    :class="!selectedFile ? 'opacity-40 cursor-not-allowed' : ''">
+                    Choose Style <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+                <button x-show="step === 2" @click="submitUpload()" class="btn-gold">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i> Import with AI
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- What gets extracted -->
+    <div class="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {% for item in extracted_fields %}
+        <div class="flex items-center gap-2.5 p-3 bg-dark-card border border-dark-border rounded-xl">
+            <i data-lucide="check-circle" class="w-4 h-4 text-gold flex-shrink-0"></i>
+            <span class="text-gray-300 text-sm">{{ item }}</span>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<script>
+    function cvUploader() {
+        return {
+            step: 1,
+            dragging: false,
+            selectedFile: null,
+            selectedTemplate: 'modern',
+            errorMsg: '',
+            processingMsg: 'Reading your document…',
+            progress: 0,
+            resultName: '',
+
+            init() {
+                lucide.createIcons();
+            },
+
+            formatSize(bytes) {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            },
+
+            handleFileSelect(event) {
+                const file = event.target.files[0];
+                this.validateAndSet(file);
+            },
+
+            handleDrop(event) {
+                this.dragging = false;
+                const file = event.dataTransfer.files[0];
+                this.validateAndSet(file);
+            },
+
+            validateAndSet(file) {
+                this.errorMsg = '';
+                if (!file) return;
+                const ext = file.name.toLowerCase().split('.').pop();
+                if (!['pdf', 'docx'].includes(ext)) {
+                    this.errorMsg = 'Only PDF and DOCX files are supported.';
+                    return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    this.errorMsg = 'File is too large. Maximum size is 5 MB.';
+                    return;
+                }
+                this.selectedFile = file;
+            },
+
+            nextStep() {
+                if (this.step === 1 && this.selectedFile) this.step = 2;
+            },
+
+            async submitUpload() {
+                this.step = 3;
+                this.progress = 1;
+                this.processingMsg = 'Reading your document…';
+
+                const formData = new FormData();
+                formData.append('cv_file', this.selectedFile);
+                formData.append('template', this.selectedTemplate);
+                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+                // Simulate progress ticks
+                const tick = (msg, p) => { this.processingMsg = msg; this.progress = p; };
+
+                try {
+                    const tickTimer = setTimeout(() => tick('Extracting information with AI…', 2), 1200);
+                    const tick2 = setTimeout(() => tick('Building your new resume…', 3), 4000);
+
+                    const resp = await fetch("{% url 'resumes:upload_cv' %}", {
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    clearTimeout(tickTimer);
+                    clearTimeout(tick2);
+                    this.progress = 3;
+
+                    const data = await resp.json();
+
+                    if (!resp.ok || !data.success) {
+                        this.step = 2;
+                        this.errorMsg = data.error || 'Something went wrong. Please try again.';
+                        return;
+                    }
+
+                    this.resultName = data.name;
+                    this.step = 4;
+
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 1800);
+
+                } catch (err) {
+                    console.error('Upload error:', err);
+                    this.step = 2;
+                    this.errorMsg = 'Network error. Please check your connection and try again.';
+                }
+            },
+        };
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,59 @@
+<footer class="border-t border-dark-border bg-dark-surface mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <!-- Brand -->
+            <div class="md:col-span-1">
+                <a href="{% url 'landing' %}" class="flex items-center gap-2 mb-4">
+                    <div class="w-7 h-7 rounded-lg bg-gold flex items-center justify-center">
+                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-dark-bg"></i>
+                    </div>
+                    <span class="text-lg font-display font-bold">CV<span class="text-gold">Craft</span></span>
+                </a>
+                <p class="text-gray-500 text-sm leading-relaxed">Build stunning, ATS-friendly resumes in minutes. Free
+                    to start, powerful when you upgrade.</p>
+                <div class="flex gap-3 mt-4">
+                    <a href="#" class="social-icon" aria-label="Twitter"><i data-lucide="twitter"
+                            class="w-4 h-4"></i></a>
+                    <a href="#" class="social-icon" aria-label="LinkedIn"><i data-lucide="linkedin"
+                            class="w-4 h-4"></i></a>
+                    <a href="#" class="social-icon" aria-label="GitHub"><i data-lucide="github" class="w-4 h-4"></i></a>
+                </div>
+            </div>
+            <!-- Product -->
+            <div>
+                <h3 class="text-sm font-semibold text-white mb-4">Product</h3>
+                <ul class="space-y-2.5">
+                    <li><a href="{% url 'resumes:create' %}" class="footer-link">Resume Builder</a></li>
+                    <li><a href="{% url 'billing:pricing' %}" class="footer-link">Pricing</a></li>
+                    <li><a href="#" class="footer-link">Templates</a></li>
+                    <li><a href="#" class="footer-link">ATS Checker</a></li>
+                </ul>
+            </div>
+            <!-- Company -->
+            <div>
+                <h3 class="text-sm font-semibold text-white mb-4">Company</h3>
+                <ul class="space-y-2.5">
+                    <li><a href="{% url 'about' %}" class="footer-link">About Us</a></li>
+                    <li><a href="#" class="footer-link">Blog</a></li>
+                    <li><a href="#" class="footer-link">Careers</a></li>
+                    <li><a href="#" class="footer-link">Contact</a></li>
+                </ul>
+            </div>
+            <!-- Legal -->
+            <div>
+                <h3 class="text-sm font-semibold text-white mb-4">Legal</h3>
+                <ul class="space-y-2.5">
+                    <li><a href="#" class="footer-link">Privacy Policy</a></li>
+                    <li><a href="#" class="footer-link">Terms of Service</a></li>
+                    <li><a href="#" class="footer-link">Cookie Policy</a></li>
+                    <li><a href="#" class="footer-link">GDPR</a></li>
+                </ul>
+            </div>
+        </div>
+        <div
+            class="border-t border-dark-border mt-10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p class="text-gray-600 text-sm">&copy; 2026 CVCraft. All rights reserved.</p>
+            <p class="text-gray-600 text-sm">Built with ❤️ for job seekers worldwide.</p>
+        </div>
+    </div>
+</footer>
