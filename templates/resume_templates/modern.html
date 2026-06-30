@@ -15,13 +15,7 @@
         }
 
         :root {
-            --accent: {
-                    {
-                    resume.accent_color|default: "#C9A84C"
-                }
-            }
-
-            ;
+            --accent: {{ resume.accent_color|default:"#C9A84C" }};
             --font: '{{ resume.font_family|default:"Inter" }}',
             'Helvetica Neue',
             Arial,
@@ -345,9 +339,9 @@
                     {% if data.personal.email %}<div>{{ data.personal.email }}</div>{% endif %}
                     {% if data.personal.phone %}<div>{{ data.personal.phone }}</div>{% endif %}
                     {% if data.personal.location %}<div>{{ data.personal.location }}</div>{% endif %}
-                    {% if data.personal.website %}<div>{{ data.personal.website }}</div>{% endif %}
-                    {% if data.personal.linkedin %}<div>{{ data.personal.linkedin }}</div>{% endif %}
-                    {% if data.personal.github %}<div>{{ data.personal.github }}</div>{% endif %}
+                    {% if data.personal.website %}<div><a href="{% if '://' in data.personal.website %}{{ data.personal.website }}{% else %}https://{{ data.personal.website }}{% endif %}" target="_blank" rel="noopener noreferrer">{{ data.personal.website }}</a></div>{% endif %}
+                    {% if data.personal.linkedin %}<div><a href="{% if '://' in data.personal.linkedin %}{{ data.personal.linkedin }}{% else %}https://{{ data.personal.linkedin }}{% endif %}" target="_blank" rel="noopener noreferrer">{{ data.personal.linkedin }}</a></div>{% endif %}
+                    {% if data.personal.github %}<div><a href="{% if '://' in data.personal.github %}{{ data.personal.github }}{% else %}https://{{ data.personal.github }}{% endif %}" target="_blank" rel="noopener noreferrer">{{ data.personal.github }}</a></div>{% endif %}
                 </div>
             </div>
             {% if data.personal.summary %}
@@ -363,7 +357,7 @@
                 <!-- Experience -->
                 {% if data.experience %}
                 <div class="section">
-                    <div class="section-title">Work Experience</div>
+                    <h2 class="section-title">Work Experience</h2>
                     {% for exp in data.experience %}
                     <div class="entry">
                         <div class="entry-header">
@@ -386,17 +380,21 @@
                 <!-- Education -->
                 {% if data.education %}
                 <div class="section">
-                    <div class="section-title">Education</div>
+                    <h2 class="section-title">Education</h2>
                     {% for edu in data.education %}
                     <div class="entry">
                         <div class="entry-header">
                             <div class="entry-title">{{ edu.degree }}</div>
                             <div class="entry-date">{{ edu.start_date }}{% if edu.end_date %} – {{ edu.end_date }}{% endif %}</div>
                         </div>
-                        <div class="entry-subtitle">{{ edu.institution }}</div>
+                        <div class="entry-subtitle">{{ edu.institution }}{% if edu.field %} &bull; {{ edu.field }}{% endif %}</div>
                         {% if edu.location %}<div class="entry-location">{{ edu.location }}</div>{% endif %}
-                        {% if edu.gpa %}<div class="entry-location">GPA: {{ edu.gpa }}</div>{% endif %}
-                        {% if edu.achievements %}<div class="entry-description">{{ edu.achievements }}</div>{% endif %}
+                        {% if edu.grade %}<div class="entry-location">Grade: {{ edu.grade }}</div>{% endif %}
+                        {% if edu.bullets %}
+                        <ul class="bullets">
+                            {% for b in edu.bullets %}{% if b %}<li>{{ b }}</li>{% endif %}{% endfor %}
+                        </ul>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 </div>
@@ -405,12 +403,12 @@
                 <!-- Projects -->
                 {% if data.projects %}
                 <div class="section">
-                    <div class="section-title">Projects</div>
+                    <h2 class="section-title">Projects</h2>
                     {% for proj in data.projects %}
                     <div class="entry">
                         <div class="entry-header">
                             <div class="entry-title">{{ proj.name }}</div>
-                            {% if proj.url %}<div class="entry-date" style="font-size:7.5pt">{{ proj.url }}</div>{% endif %}
+                            {% if proj.url %}<div class="entry-date" style="font-size:7.5pt"><a href="{% if '://' in proj.url %}{{ proj.url }}{% else %}https://{{ proj.url }}{% endif %}" target="_blank" rel="noopener noreferrer" style="color:inherit">{{ proj.url }}</a></div>{% endif %}
                         </div>
                         {% if proj.technologies %}<div class="entry-subtitle">{{ proj.technologies }}</div>{% elif proj.tech_stack %}<div class="entry-subtitle">{{ proj.tech_stack }}</div>{% endif %}
                         {% if proj.description %}<div class="entry-description">{{ proj.description }}</div>{% endif %}
@@ -427,7 +425,7 @@
                 <!-- Skills -->
                 {% if data.skills %}
                 <div class="section">
-                    <div class="section-title">Skills</div>
+                    <h2 class="section-title">Skills</h2>
                     {% for skill in data.skills %}
                     <span class="skill-tag">{% if skill.name %}{{ skill.name }}{% else %}{{ skill }}{% endif %}</span>
                     {% endfor %}
@@ -437,11 +435,11 @@
                 <!-- Certifications -->
                 {% if data.certifications %}
                 <div class="section">
-                    <div class="section-title">Certifications</div>
+                    <h2 class="section-title">Certifications</h2>
                     {% for cert in data.certifications %}
                     <div class="sidebar-entry">
                         <div class="sidebar-entry-name">{{ cert.name }}</div>
-                        <div class="sidebar-entry-sub">{{ cert.issuer }}{% if cert.date %} · {{ cert.date }}{% endif %}
+                        <div class="sidebar-entry-sub">{{ cert.issuer }}{% if cert.date %} · {{ cert.date }}{% endif %}{% if cert.grade %} · {{ cert.grade }}{% endif %}
                         </div>
                     </div>
                     {% endfor %}
@@ -451,7 +449,7 @@
                 <!-- Languages -->
                 {% if data.languages %}
                 <div class="section">
-                    <div class="section-title">Languages</div>
+                    <h2 class="section-title">Languages</h2>
                     {% for lang in data.languages %}
                     <div class="lang-row">
                         <span class="lang-name">{{ lang.name }}</span>

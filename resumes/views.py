@@ -16,15 +16,8 @@ from .models import Resume, ExportLog, DEFAULT_RESUME_DATA, TEMPLATE_CHOICES
 @login_required
 def dashboard(request):
     resumes = Resume.objects.filter(user=request.user)
-    free_limit = settings.FREE_RESUME_LIMIT
-    is_pro = getattr(request.user, 'subscription',
-                     None) and request.user.subscription.is_active
-    can_create = is_pro or resumes.count() < free_limit
     return render(request, 'resumes/dashboard.html', {
         'resumes': resumes,
-        'free_limit': free_limit,
-        'is_pro': is_pro,
-        'can_create': can_create,
         'resume_count': resumes.count(),
     })
 
@@ -34,13 +27,6 @@ def dashboard(request):
 @login_required
 def create_resume(request):
     user = request.user
-    resumes = Resume.objects.filter(user=user)
-    is_pro = getattr(user, 'subscription',
-                     None) and user.subscription.is_active
-    if not is_pro and resumes.count() >= settings.FREE_RESUME_LIMIT:
-        messages.warning(
-            request, 'Free plan allows up to 3 resumes. Upgrade to Pro for unlimited.')
-        return redirect('resumes:dashboard')
 
     if request.method == 'POST':
         title = request.POST.get('title', 'My Resume')
@@ -62,12 +48,6 @@ def create_resume(request):
 def duplicate_resume(request, pk):
     resume = get_object_or_404(Resume, pk=pk, user=request.user)
     user = request.user
-    resumes = Resume.objects.filter(user=user)
-    is_pro = getattr(user, 'subscription',
-                     None) and user.subscription.is_active
-    if not is_pro and resumes.count() >= settings.FREE_RESUME_LIMIT:
-        messages.warning(request, 'Upgrade to Pro to create more resumes.')
-        return redirect('resumes:dashboard')
 
     new_resume = Resume.objects.create(
         user=user,
@@ -214,22 +194,6 @@ def toggle_public(request, pk):
 @login_required
 def export_pdf(request, pk):
     resume = get_object_or_404(Resume, pk=pk, user=request.user)
-    is_pro = getattr(request.user, 'subscription',
-                     None) and request.user.subscription.is_active
-
-    # Check export limits for free users
-    if not is_pro:
-        from django.utils import timezone
-        month_start = timezone.now().replace(
-            day=1, hour=0, minute=0, second=0, microsecond=0)
-        exports_this_month = ExportLog.objects.filter(
-            user=request.user, format='pdf', exported_at__gte=month_start
-        ).count()
-        if exports_this_month >= settings.FREE_EXPORT_LIMIT:
-            messages.warning(
-                request, 'Free plan allows 1 PDF export per month. Upgrade to Pro.')
-            return redirect('resumes:builder', pk=pk)
-
     ExportLog.objects.create(user=request.user, resume=resume, format='pdf')
     return redirect('resumes:print_resume', pk=pk)
 
@@ -756,11 +720,6 @@ def upload_cv(request):
     title = f"{title}'s Resume"
 
     user = request.user
-    resumes = Resume.objects.filter(user=user)
-    is_pro = getattr(user, 'subscription',
-                     None) and user.subscription.is_active
-    if not is_pro and resumes.count() >= settings.FREE_RESUME_LIMIT:
-        return JsonResponse({'error': 'Free plan allows up to 3 resumes. Upgrade to Pro for unlimited.'}, status=403)
 
     resume = Resume.objects.create(
         user=user,

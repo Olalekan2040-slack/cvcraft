@@ -20,8 +20,8 @@
                 <a href="{% url 'resumes:create' %}" class="nav-link">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i> New Resume
                 </a>
-                <a href="{% url 'billing:pricing' %}" class="nav-link">
-                    <i data-lucide="zap" class="w-4 h-4"></i> Upgrade
+                <a href="{% url 'resumes:upload_cv' %}" class="nav-link">
+                    <i data-lucide="upload" class="w-4 h-4"></i> Import CV
                 </a>
                 <div class="relative ml-2" x-data="{ open: false }">
                     <button @click="open = !open"
@@ -41,9 +41,6 @@
                         </div>
                         <a href="{% url 'accounts:profile' %}" class="dropdown-item">
                             <i data-lucide="user" class="w-4 h-4"></i> Profile Settings
-                        </a>
-                        <a href="{% url 'billing:manage' %}" class="dropdown-item">
-                            <i data-lucide="credit-card" class="w-4 h-4"></i> Subscription
                         </a>
                         <div class="border-t border-dark-border mt-1 pt-1">
                             <form method="post" action="{% url 'account_logout' %}">
@@ -79,7 +76,7 @@
             {% if user.is_authenticated %}
             <a href="{% url 'resumes:dashboard' %}" class="mobile-nav-link">Dashboard</a>
             <a href="{% url 'resumes:create' %}" class="mobile-nav-link">New Resume</a>
-            <a href="{% url 'billing:pricing' %}" class="mobile-nav-link">Upgrade</a>
+            <a href="{% url 'resumes:upload_cv' %}" class="mobile-nav-link">Import CV</a>
             <a href="{% url 'accounts:profile' %}" class="mobile-nav-link">Profile</a>
             <form method="post" action="{% url 'account_logout' %}">
                 {% csrf_token %}

@@ -11,12 +11,7 @@
         <div>
             <h1 class="text-3xl font-display font-bold text-white">My Resumes</h1>
             <p class="text-gray-500 mt-1">
-                {% if is_pro %}
-                Unlimited resumes &bull; Pro Plan
-                {% else %}
-                {{ resume_count }} / {{ free_limit }} resumes used &bull;
-                <a href="{% url 'billing:pricing' %}" class="text-gold hover:text-gold-light">Upgrade for unlimited</a>
-                {% endif %}
+                {{ resume_count }} resume{{ resume_count|pluralize }} &bull; Unlimited &bull; 100% Free
             </p>
         </div>
         <div class="flex items-center gap-3">
@@ -24,36 +19,12 @@
                 <i data-lucide="upload" class="w-4 h-4"></i>
                 Import CV
             </a>
-            {% if can_create %}
             <a href="{% url 'resumes:create' %}" class="btn-gold">
                 <i data-lucide="plus" class="w-4 h-4"></i>
                 New Resume
             </a>
-            {% else %}
-            <a href="{% url 'billing:pricing' %}" class="btn-gold">
-                <i data-lucide="zap" class="w-4 h-4"></i>
-                Upgrade to Add More
-            </a>
-            {% endif %}
         </div>
     </div>
-
-    <!-- Pro upgrade banner (free users only) -->
-    {% if not is_pro %}
-    <div
-        class="mb-8 p-5 rounded-2xl border border-gold/20 bg-gold/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gold/20 flex items-center justify-center flex-shrink-0">
-                <i data-lucide="sparkles" class="w-5 h-5 text-gold"></i>
-            </div>
-            <div>
-                <p class="text-white font-medium">Unlock Pro Features</p>
-                <p class="text-gray-400 text-sm">AI writing, unlimited exports, all templates, no watermarks</p>
-            </div>
-        </div>
-        <a href="{% url 'billing:pricing' %}" class="btn-gold flex-shrink-0">Upgrade — $9/mo</a>
-    </div>
-    {% endif %}
 
     <!-- Resume Grid -->
     {% if resumes %}
@@ -146,8 +117,7 @@
         </div>
         {% endfor %}
 
-        <!-- New Resume Card (if can create) -->
-        {% if can_create %}
+        <!-- New Resume Card -->
         <a href="{% url 'resumes:create' %}"
             class="border-2 border-dashed border-dark-border hover:border-gold/40 rounded-2xl aspect-auto min-h-64 flex flex-col items-center justify-center gap-3 text-gray-500 hover:text-gold transition-all duration-300 group cursor-pointer">
             <div
@@ -170,7 +140,6 @@
                 <p class="text-xs text-gray-600 mt-0.5">Upload PDF or DOCX</p>
             </div>
         </a>
-        {% endif %}
     </div>
 
     {% else %}

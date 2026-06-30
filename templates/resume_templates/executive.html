@@ -12,19 +12,13 @@
         }
 
         :root {
-            --accent: {
-                    {
-                    resume.accent_color|default: "#C9A84C"
-                }
-            }
-
-            ;
-            --font: 'Inter',
+            --accent: {{ resume.accent_color|default:"#C9A84C" }};
+            --font: '{{ resume.font_family|default:"Inter" }}',
             Arial,
             sans-serif;
         }
 
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family={{ resume.font_family|default:"Inter" }}:wght@300;400;600;700&display=swap');
 
         body {
             font-family: var(--font);
@@ -303,8 +297,9 @@
                 {% if data.personal.email %}<div class="contact-item">{{ data.personal.email }}</div>{% endif %}
                 {% if data.personal.phone %}<div class="contact-item">{{ data.personal.phone }}</div>{% endif %}
                 {% if data.personal.location %}<div class="contact-item">{{ data.personal.location }}</div>{% endif %}
-                {% if data.personal.website %}<div class="contact-item">{{ data.personal.website }}</div>{% endif %}
-                {% if data.personal.linkedin %}<div class="contact-item">{{ data.personal.linkedin }}</div>{% endif %}
+                {% if data.personal.website %}<div class="contact-item"><a href="{% if '://' in data.personal.website %}{{ data.personal.website }}{% else %}https://{{ data.personal.website }}{% endif %}" target="_blank" rel="noopener noreferrer" style="color:inherit">{{ data.personal.website }}</a></div>{% endif %}
+                {% if data.personal.linkedin %}<div class="contact-item"><a href="{% if '://' in data.personal.linkedin %}{{ data.personal.linkedin }}{% else %}https://{{ data.personal.linkedin }}{% endif %}" target="_blank" rel="noopener noreferrer" style="color:inherit">{{ data.personal.linkedin }}</a></div>{% endif %}
+                {% if data.personal.github %}<div class="contact-item"><a href="{% if '://' in data.personal.github %}{{ data.personal.github }}{% else %}https://{{ data.personal.github }}{% endif %}" target="_blank" rel="noopener noreferrer" style="color:inherit">{{ data.personal.github }}</a></div>{% endif %}
             </div>
             {% if data.skills %}<div class="sb-section">
                 <div class="sb-label">Skills</div>{% for skill in data.skills %}<div class="skill-item">{% if skill.name %}{{ skill.name }}{% else %}{{ skill }}{% endif %}</div>{% endfor %}
@@ -314,13 +309,13 @@
                         lang.name }}</span><span class="lang-level">{{ lang.level }}</span></div>{% endfor %}
             </div>{% endif %}
             {% if data.certifications %}<div class="sb-section">
-                <div class="sb-label">Certifications</div>{% for cert in data.certifications %}<div class="contact-item" style="margin-bottom:7px"><b style="color:#eee">{{ cert.name }}</b><br>{{ cert.issuer }}{% if cert.date %} · {{ cert.date }}{% endif %}</div>{% endfor %}
+                <div class="sb-label">Certifications</div>{% for cert in data.certifications %}<div class="contact-item" style="margin-bottom:7px"><b style="color:#eee">{{ cert.name }}</b><br>{{ cert.issuer }}{% if cert.date %} · {{ cert.date }}{% endif %}{% if cert.grade %} · {{ cert.grade }}{% endif %}</div>{% endfor %}
             </div>{% endif %}
         </div>
         <div class="main">
             {% if data.personal.summary %}<div class="summary">{{ data.personal.summary }}</div>{% endif %}
             {% if data.experience %}<div class="section">
-                <div class="section-title">Experience</div>{% for exp in data.experience %}<div class="entry">
+                <h2 class="section-title">Experience</h2>{% for exp in data.experience %}<div class="entry">
                     <div class="entry-header">
                         <div class="entry-title">{{ exp.position }}</div>
                         <div class="entry-date">{{ exp.start_date }}{% if exp.end_date %} – {{ exp.end_date }}{% endif %}</div>
@@ -332,21 +327,24 @@
                 </div>{% endfor %}
             </div>{% endif %}
             {% if data.education %}<div class="section">
-                <div class="section-title">Education</div>{% for edu in data.education %}<div class="entry">
+                <h2 class="section-title">Education</h2>{% for edu in data.education %}<div class="entry">
                     <div class="entry-header">
                         <div class="entry-title">{{ edu.degree }}</div>
                         <div class="entry-date">{{ edu.start_date }}{% if edu.end_date %} – {{ edu.end_date }}{% endif %}</div>
                     </div>
-                    <div class="entry-sub">{{ edu.institution }}{% if edu.location %} · {{ edu.location }}{% endif %}
-                    </div>{% if edu.gpa %}<div style="font-size:8.5pt;color:#888">GPA: {{ edu.gpa }}</div>{% endif %}
+                    <div class="entry-sub">{{ edu.institution }}{% if edu.field %} · {{ edu.field }}{% endif %}{% if edu.location %} · {{ edu.location }}{% endif %}
+                    </div>{% if edu.grade %}<div style="font-size:8.5pt;color:#888">Grade: {{ edu.grade }}</div>{% endif %}{% if edu.bullets %}<ul class="bullets">{% for b in edu.bullets %}{% if b %}<li>{{ b }}</li>{% endif %}{% endfor %}</ul>{% endif %}
                 </div>{% endfor %}
             </div>{% endif %}
             {% if data.projects %}<div class="section">
-                <div class="section-title">Projects</div>{% for proj in data.projects %}<div class="entry">
+                <h2 class="section-title">Projects</h2>{% for proj in data.projects %}<div class="entry">
                     <div class="entry-header">
                         <div class="entry-title">{{ proj.name }}</div>{% if proj.url %}<div
-                            style="font-size:7.5pt;color:#888">{{ proj.url }}</div>{% endif %}
+                            style="font-size:7.5pt;color:#888"><a href="{% if '://' in proj.url %}{{ proj.url }}{% else %}https://{{ proj.url }}{% endif %}" target="_blank" rel="noopener noreferrer" style="color:inherit">{{ proj.url }}</a></div>{% endif %}
+                    </div>
+                    {% if proj.technologies %}<div class="entry-sub" style="font-size:8.5pt;color:#888">{{ proj.technologies }}</div>{% endif %}
                     {% if proj.description %}<div style="font-size:9pt;color:#444;margin-top:4px">{{ proj.description }}</div>{% endif %}
+                    {% if proj.bullets %}<ul class="bullets">{% for b in proj.bullets %}{% if b %}<li>{{ b }}</li>{% endif %}{% endfor %}</ul>{% endif %}
                 </div>{% endfor %}
             </div>{% endif %}
         </div>
