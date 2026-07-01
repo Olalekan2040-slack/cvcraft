@@ -617,6 +617,7 @@
                         <div class="edu-degree">{{ edu.degree }}</div>
                         <div class="edu-school">{{ edu.institution }}</div>
                         <div class="edu-detail">{{ edu.location }}{% if edu.end_date %} · {{ edu.end_date }}{% endif %}{% if edu.grade %} · {{ edu.grade }}{% endif %}</div>
+                        {% if edu.bullets %}<ul class="bullets" style="margin:4pt 0 0 14pt;font-size:9pt">{% for b in edu.bullets %}{% if b %}<li>{{ b }}</li>{% endif %}{% endfor %}</ul>{% elif edu.achievements %}<div class="edu-detail" style="margin-top:3pt">{{ edu.achievements }}</div>{% endif %}
                     </div>
                     {% endfor %}
                 </div>

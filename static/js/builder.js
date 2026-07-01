@@ -71,10 +71,14 @@ function builder() {
             const iframe = document.getElementById('preview-iframe');
             if (!iframe) return;
 
-            // Save current data first, then reload iframe
-            this.saveResume(true).then(() => {
-                iframe.src = PREVIEW_URL + '?t=' + Date.now();
-            });
+            const reload = () => { iframe.src = PREVIEW_URL + '?t=' + Date.now(); };
+            const p = this.saveResume(true);
+            // saveResume may return undefined if already saving — handle both cases
+            if (p && typeof p.then === 'function') {
+                p.then(reload).catch(reload);
+            } else {
+                reload();
+            }
         },
 
         // ── Save ───────────────────────────────────────────
@@ -132,15 +136,15 @@ function builder() {
                 position: '', company: '', start_date: '', end_date: 'Present',
                 location: '', description: '', bullets: [], _open: true,
             });
-            this.$nextTick(() => lucide.createIcons());
+            this.$nextTick(() => { lucide.createIcons(); this.debouncedPreview(); });
         },
 
         addEducation() {
             this.data.education.push({
-                degree: '', institution: '', start_date: '', end_date: '',
-                location: '', gpa: '', achievements: '', _open: true,
+                degree: '', field: '', institution: '', start_date: '', end_date: '',
+                location: '', grade: '', achievements: '', bullets: [], _open: true,
             });
-            this.$nextTick(() => lucide.createIcons());
+            this.$nextTick(() => { lucide.createIcons(); this.debouncedPreview(); });
         },
 
         addSkill() {
@@ -162,9 +166,9 @@ function builder() {
 
         addProject() {
             this.data.projects.push({
-                name: '', tech_stack: '', url: '', description: '', _open: true,
+                name: '', technologies: '', url: '', description: '', bullets: [], _open: true,
             });
-            this.$nextTick(() => lucide.createIcons());
+            this.$nextTick(() => { lucide.createIcons(); this.debouncedPreview(); });
         },
 
         addLanguage() {

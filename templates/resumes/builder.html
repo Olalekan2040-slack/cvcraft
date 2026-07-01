@@ -330,7 +330,11 @@
                                 <div class="grid grid-cols-2 gap-3">
                                     <div class="col-span-2"><label class="form-label">Degree / Certificate</label>
                                         <input type="text" x-model="edu.degree" @input="debouncedPreview()"
-                                            class="form-input" placeholder="Bachelor of Science in Computer Science">
+                                            class="form-input" placeholder="Bachelor of Science">
+                                    </div>
+                                    <div class="col-span-2"><label class="form-label">Field of Study</label>
+                                        <input type="text" x-model="edu.field" @input="debouncedPreview()"
+                                            class="form-input" placeholder="Computer Science">
                                     </div>
                                     <div class="col-span-2"><label class="form-label">Institution</label>
                                         <input type="text" x-model="edu.institution" @input="debouncedPreview()"
@@ -344,8 +348,8 @@
                                         <input type="text" x-model="edu.end_date" @input="debouncedPreview()"
                                             class="form-input" placeholder="2022">
                                     </div>
-                                    <div><label class="form-label">GPA (optional)</label>
-                                        <input type="text" x-model="edu.gpa" @input="debouncedPreview()"
+                                    <div><label class="form-label">Grade / GPA</label>
+                                        <input type="text" x-model="edu.grade" @input="debouncedPreview()"
                                             class="form-input" placeholder="3.8 / 4.0">
                                     </div>
                                     <div><label class="form-label">Location</label>

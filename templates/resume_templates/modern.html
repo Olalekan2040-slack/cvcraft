@@ -394,7 +394,7 @@
                         <ul class="bullets">
                             {% for b in edu.bullets %}{% if b %}<li>{{ b }}</li>{% endif %}{% endfor %}
                         </ul>
-                        {% endif %}
+                        {% elif edu.achievements %}<div class="entry-location">{{ edu.achievements }}</div>{% endif %}
                     </div>
                     {% endfor %}
                 </div>

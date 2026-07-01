@@ -333,7 +333,7 @@
                         <div class="entry-date">{{ edu.start_date }}{% if edu.end_date %} – {{ edu.end_date }}{% endif %}</div>
                     </div>
                     <div class="entry-sub">{{ edu.institution }}{% if edu.field %} · {{ edu.field }}{% endif %}{% if edu.location %} · {{ edu.location }}{% endif %}
-                    </div>{% if edu.grade %}<div style="font-size:8.5pt;color:#888">Grade: {{ edu.grade }}</div>{% endif %}{% if edu.bullets %}<ul class="bullets">{% for b in edu.bullets %}{% if b %}<li>{{ b }}</li>{% endif %}{% endfor %}</ul>{% endif %}
+                    </div>{% if edu.grade %}<div style="font-size:8.5pt;color:#888">Grade: {{ edu.grade }}</div>{% endif %}{% if edu.bullets %}<ul class="bullets">{% for b in edu.bullets %}{% if b %}<li>{{ b }}</li>{% endif %}{% endfor %}</ul>{% elif edu.achievements %}<div style="font-size:8.5pt;color:#888;margin-top:3pt">{{ edu.achievements }}</div>{% endif %}
                 </div>{% endfor %}
             </div>{% endif %}
             {% if data.projects %}<div class="section">

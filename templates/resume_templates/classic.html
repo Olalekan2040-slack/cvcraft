@@ -332,7 +332,7 @@
                 </div>
                 <div class="entry-subtitle">{{ edu.institution }}{% if edu.field %} &bull; {{ edu.field }}{% endif %}{% if edu.location %} &bull; {{ edu.location }}{% endif %}</div>
                 {% if edu.grade %}<div class="entry-location">Grade: {{ edu.grade }}</div>{% endif %}
-                {% if edu.bullets %}<ul class="bullets">{% for b in edu.bullets %}{% if b %}<li>{{ b }}</li>{% endif %}{% endfor %}</ul>{% endif %}
+                {% if edu.bullets %}<ul class="bullets">{% for b in edu.bullets %}{% if b %}<li>{{ b }}</li>{% endif %}{% endfor %}</ul>{% elif edu.achievements %}<div class="entry-location">{{ edu.achievements }}</div>{% endif %}
             </div>
             {% endfor %}
         </div>
