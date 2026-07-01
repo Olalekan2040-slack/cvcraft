@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load custom_filters %}
+{% load custom_filters static %}
 {% block title %}CVCraft — Build Your Perfect Resume with AI{% endblock %}
 
 {% block content %}
@@ -93,20 +93,11 @@
                             <span class="text-xs text-gold">AI: Improve this bullet point...</span>
                         </div>
                     </div>
-                    <!-- Right: Preview -->
-                    <div class="p-6 bg-white overflow-hidden">
-                        <div class="space-y-2">
-                            <div class="h-4 bg-gray-800 rounded w-32"></div>
-                            <div class="h-2.5 bg-gray-400 rounded w-48"></div>
-                            <div class="h-px bg-gray-200 my-3"></div>
-                            <div class="h-2 bg-gray-300 rounded w-full"></div>
-                            <div class="h-2 bg-gray-300 rounded w-4/5"></div>
-                            <div class="h-2 bg-gray-300 rounded w-3/4"></div>
-                            <div class="h-px bg-gray-200 my-3"></div>
-                            <div class="h-2.5 bg-gray-700 rounded w-24 mb-2"></div>
-                            <div class="h-2 bg-gray-200 rounded w-full"></div>
-                            <div class="h-2 bg-gray-200 rounded w-5/6"></div>
-                        </div>
+                    <!-- Right: Live Resume Preview -->
+                    <div class="bg-white overflow-hidden relative">
+                        <img src="{% static 'images/templates/modern.png' %}"
+                             alt="Modern resume template preview"
+                             class="w-full h-full object-cover object-top">
                     </div>
                 </div>
             </div>
@@ -211,36 +202,22 @@
         </div>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {% for slug, name in templates %}
+            {% with img_path="images/templates/"|add:slug|add:".png" %}
             <div class="group cursor-pointer">
-                <div
-                    class="aspect-[3/4] rounded-xl border border-dark-border bg-dark-card group-hover:border-gold/50 transition-all duration-300 overflow-hidden relative shadow-card">
-                    <div class="absolute inset-0 bg-white m-2 rounded-lg p-3">
-                        <div class="h-1.5 bg-gray-800 rounded w-16 mb-1"></div>
-                        <div class="h-1 bg-gray-400 rounded w-24 mb-3"></div>
-                        <div class="space-y-1">
-                            <div class="h-0.5 bg-gray-200 rounded w-full"></div>
-                            <div class="h-0.5 bg-gray-200 rounded w-5/6"></div>
-                            <div class="h-0.5 bg-gray-200 rounded w-4/5"></div>
-                        </div>
-                    </div>
-                    <div
-                        class="absolute inset-0 bg-gold/0 group-hover:bg-gold/5 transition-all rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <div class="aspect-[3/4] rounded-xl border border-dark-border bg-dark-card group-hover:border-gold/50 transition-all duration-300 overflow-hidden relative shadow-card">
+                    <img src="{% static img_path %}"
+                         alt="{{ name }} resume template"
+                         class="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-105">
+                    <div class="absolute inset-0 bg-dark-bg/0 group-hover:bg-dark-bg/30 transition-all rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100">
                         <a href="{% url 'account_signup' %}"
-                            class="bg-gold text-dark-bg text-xs font-semibold px-3 py-1.5 rounded-lg">Use Template</a>
+                           class="bg-gold text-dark-bg text-xs font-semibold px-3 py-1.5 rounded-lg shadow-gold">
+                           Use Template
+                        </a>
                     </div>
                 </div>
                 <p class="text-center text-sm text-gray-400 mt-2 group-hover:text-gold transition-colors">{{ name }}</p>
             </div>
-            {% empty %}
-            {% for t in "Classic,Modern,Executive,Creative,Technical"|split:"," %}
-            <div class="group cursor-pointer">
-                <div
-                    class="aspect-[3/4] rounded-xl border border-dark-border bg-dark-card group-hover:border-gold/50 transition-all duration-300 overflow-hidden shadow-card">
-                    <div class="h-full bg-white m-2 rounded-lg"></div>
-                </div>
-                <p class="text-center text-sm text-gray-400 mt-2">{{ t }}</p>
-            </div>
-            {% endfor %}
+            {% endwith %}
             {% endfor %}
         </div>
         <div class="text-center mt-10">

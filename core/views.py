@@ -1,11 +1,11 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from resumes.models import TEMPLATE_CHOICES
 
 
 def landing(request):
     if request.user.is_authenticated:
-        from django.shortcuts import redirect
         return redirect('resumes:dashboard')
-    return render(request, 'core/landing.html')
+    return render(request, 'core/landing.html', {'templates': TEMPLATE_CHOICES})
 
 
 def pricing(request):
