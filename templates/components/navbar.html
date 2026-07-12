@@ -23,6 +23,9 @@
                 <a href="{% url 'resumes:upload_cv' %}" class="nav-link">
                     <i data-lucide="upload" class="w-4 h-4"></i> Import CV
                 </a>
+                <a href="{% url 'jobs:feed' %}" class="nav-link">
+                    <i data-lucide="search" class="w-4 h-4"></i> Job Radar
+                </a>
                 <div class="relative ml-2" x-data="{ open: false }">
                     <button @click="open = !open"
                         class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-dark-border hover:border-gold/40 transition-all">
@@ -77,6 +80,7 @@
             <a href="{% url 'resumes:dashboard' %}" class="mobile-nav-link">Dashboard</a>
             <a href="{% url 'resumes:create' %}" class="mobile-nav-link">New Resume</a>
             <a href="{% url 'resumes:upload_cv' %}" class="mobile-nav-link">Import CV</a>
+            <a href="{% url 'jobs:feed' %}" class="mobile-nav-link">Job Radar</a>
             <a href="{% url 'accounts:profile' %}" class="mobile-nav-link">Profile</a>
             <form method="post" action="{% url 'account_logout' %}">
                 {% csrf_token %}

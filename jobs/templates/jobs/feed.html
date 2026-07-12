@@ -1,0 +1,316 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Job Radar — CVCraft{% endblock %}
+
+{% block content %}
+<style>
+  .ats-excellent { --ats-color: #10b981; }
+  .ats-good      { --ats-color: #f59e0b; }
+  .ats-fair      { --ats-color: #f97316; }
+  .ats-low       { --ats-color: #ef4444; }
+
+  .ats-ring {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: 3px solid var(--ats-color);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .ats-ring .ats-pct  { font-size: 12px; font-weight: 700; color: var(--ats-color); line-height: 1; }
+  .ats-ring .ats-lbl  { font-size: 7px; color: #888; letter-spacing: 0.3px; }
+
+  .job-card {
+    background: #141820;
+    border: 1px solid #1e2330;
+    border-radius: 12px;
+    padding: 18px 20px;
+    transition: border-color 0.15s, transform 0.1s;
+    position: relative;
+  }
+  .job-card:hover {
+    border-color: #2d3548;
+    transform: translateY(-1px);
+  }
+
+  .source-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; color: #6b7280;
+    background: #1a1f2e; border: 1px solid #252b3d;
+    padding: 2px 8px; border-radius: 20px;
+  }
+  .source-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ats-color, #6b7280);
+    flex-shrink: 0;
+  }
+
+  .kw-chip {
+    display: inline-block;
+    font-size: 10px; color: #C9A84C;
+    background: rgba(201,168,76,0.08);
+    border: 1px solid rgba(201,168,76,0.2);
+    padding: 1px 7px; border-radius: 10px;
+  }
+
+  .btn-save {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; padding: 5px 12px; border-radius: 6px;
+    border: 1px solid #252b3d; background: transparent;
+    color: #9ca3af; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-save:hover, .btn-save.saved { border-color: #C9A84C; color: #C9A84C; }
+  .btn-save.saved { background: rgba(201,168,76,0.08); }
+
+  .btn-apply {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; padding: 5px 14px; border-radius: 6px;
+    background: #C9A84C; color: #0f1117;
+    font-weight: 700; text-decoration: none; transition: opacity 0.15s;
+  }
+  .btn-apply:hover { opacity: 0.85; color: #0f1117; }
+
+  .btn-dismiss {
+    display: inline-flex; align-items: center;
+    font-size: 11px; padding: 5px 10px; border-radius: 6px;
+    border: 1px solid transparent; background: transparent;
+    color: #4b5563; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-dismiss:hover { color: #ef4444; border-color: #ef4444; }
+
+  .tab-btn {
+    padding: 6px 18px; border-radius: 6px; font-size: 13px;
+    border: 1px solid #1e2330; background: transparent;
+    color: #6b7280; cursor: pointer; text-decoration: none;
+    transition: all 0.15s;
+  }
+  .tab-btn.active, .tab-btn:hover {
+    background: #C9A84C; color: #0f1117;
+    border-color: #C9A84C; font-weight: 600;
+  }
+
+  .breakdown-bar {
+    height: 4px; border-radius: 2px;
+    background: rgba(255,255,255,0.06);
+    overflow: hidden; margin-top: 3px;
+  }
+  .breakdown-fill {
+    height: 100%; border-radius: 2px;
+    background: var(--ats-color);
+    transition: width 0.4s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .job-card { animation: fadeIn 0.25s ease both; }
+</style>
+
+<div class="max-w-5xl mx-auto px-4 py-8">
+
+  <!-- Header -->
+  <div class="flex items-start justify-between gap-4 mb-6 flex-wrap">
+    <div>
+      <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+        <svg class="w-6 h-6 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
+        Job Radar
+      </h1>
+      <p class="text-gray-500 text-sm mt-1">
+        Jobs matched to your CV profile &bull;
+        {% if total_jobs %}{{ total_jobs }} listing{{ total_jobs|pluralize }} indexed{% else %}No listings yet — run a scrape{% endif %}
+        {% if last_scrape %}&bull; last updated {{ last_scrape.started_at|timesince }} ago{% endif %}
+      </p>
+    </div>
+    {% if not has_resume %}
+    <a href="{% url 'resumes:choose_template' %}" class="btn-gold text-sm">
+      Build your CV first
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- No resume warning -->
+  {% if not has_resume %}
+  <div class="bg-amber-900/20 border border-amber-700/40 rounded-xl p-4 mb-6 flex items-center gap-3">
+    <svg class="w-5 h-5 text-amber-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+    <p class="text-amber-300 text-sm">Create a resume first so we can personalise your job feed and ATS scores.</p>
+  </div>
+  {% endif %}
+
+  <!-- Your profile keywords -->
+  {% if keywords %}
+  <div class="mb-5">
+    <p class="text-xs text-gray-600 mb-2 uppercase tracking-wider">Detected from your CV</p>
+    <div class="flex flex-wrap gap-1.5">
+      {% for kw in keywords %}<span class="kw-chip">{{ kw }}</span>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Search + tabs -->
+  <div class="flex flex-col sm:flex-row gap-3 mb-6">
+    <form method="get" class="flex-1 flex gap-2">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      <input type="text" name="q" value="{{ q }}"
+        placeholder="Search title, company, location…"
+        class="form-input flex-1 text-sm">
+      <button type="submit" class="btn-gold px-4 py-2 text-sm">Search</button>
+    </form>
+    <div class="flex gap-2">
+      <a href="?tab=all{% if q %}&q={{ q }}{% endif %}"
+         class="tab-btn {% if tab == 'all' %}active{% endif %}">All Jobs</a>
+      <a href="?tab=saved{% if q %}&q={{ q }}{% endif %}"
+         class="tab-btn {% if tab == 'saved' %}active{% endif %}">
+        Saved{% if saved_count %} ({{ saved_count }}){% endif %}
+      </a>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  {% if not cards %}
+  <div class="text-center py-20">
+    <svg class="w-16 h-16 text-gray-700 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
+    {% if tab == 'saved' %}
+    <p class="text-gray-500 text-lg">No saved jobs yet.</p>
+    <p class="text-gray-600 text-sm mt-1">Browse your feed and bookmark jobs to apply later.</p>
+    <a href="{% url 'jobs:feed' %}" class="btn-gold mt-4 inline-block">Browse jobs</a>
+    {% elif q %}
+    <p class="text-gray-500 text-lg">No jobs match "{{ q }}".</p>
+    <a href="{% url 'jobs:feed' %}" class="text-gold hover:underline text-sm">Clear search</a>
+    {% else %}
+    <p class="text-gray-500 text-lg">No jobs indexed yet.</p>
+    <p class="text-gray-600 text-sm mt-1">Run <code class="text-gold">python manage.py scrape_jobs</code> to populate the feed.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Job cards -->
+  <div class="space-y-3" id="job-list">
+    {% for card in cards %}
+    <div class="job-card {{ card.css }}" id="job-{{ card.job.id }}" style="animation-delay: {{ forloop.counter0|floatformat:0 }}0ms">
+      <div class="flex gap-4 items-start">
+
+        <!-- ATS Score ring -->
+        <div class="ats-ring {{ card.css }}" title="ATS Match Score">
+          <span class="ats-pct">{{ card.score }}%</span>
+          <span class="ats-lbl">{{ card.label }}</span>
+        </div>
+
+        <!-- Main content -->
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start justify-between gap-2 flex-wrap">
+            <div class="min-w-0">
+              <h3 class="text-white font-semibold text-base leading-tight truncate">{{ card.job.title }}</h3>
+              <div class="flex items-center gap-2 mt-1 flex-wrap">
+                {% if card.job.company %}
+                <span class="text-gold text-sm font-medium">{{ card.job.company }}</span>
+                {% endif %}
+                {% if card.job.location %}
+                <span class="text-gray-500 text-xs">&#x2022; {{ card.job.location }}</span>
+                {% endif %}
+              </div>
+            </div>
+            <span class="source-badge {{ card.css }}">
+              <span class="source-dot"></span>
+              {{ card.job.source_name }}
+            </span>
+          </div>
+
+          <!-- Description snippet -->
+          {% if card.snippet %}
+          <p class="text-gray-500 text-xs mt-2 leading-relaxed line-clamp-2">{{ card.snippet }}</p>
+          {% endif %}
+
+          <!-- ATS breakdown (compact) -->
+          <div class="grid grid-cols-4 gap-2 mt-3">
+            <div>
+              <div class="text-xs text-gray-600">Skills</div>
+              <div class="text-xs text-gray-400 font-medium">{{ card.breakdown.skills.score }}/{{ card.breakdown.skills.max }}</div>
+              <div class="breakdown-bar {{ card.css }}"><div class="breakdown-fill" style="width:{% widthratio card.breakdown.skills.score card.breakdown.skills.max 100 %}%"></div></div>
+            </div>
+            <div>
+              <div class="text-xs text-gray-600">Title</div>
+              <div class="text-xs text-gray-400 font-medium">{{ card.breakdown.title.score }}/{{ card.breakdown.title.max }}</div>
+              <div class="breakdown-bar {{ card.css }}"><div class="breakdown-fill" style="width:{% widthratio card.breakdown.title.score card.breakdown.title.max 100 %}%"></div></div>
+            </div>
+            <div>
+              <div class="text-xs text-gray-600">Tech</div>
+              <div class="text-xs text-gray-400 font-medium">{{ card.breakdown.technologies.score }}/{{ card.breakdown.technologies.max }}</div>
+              <div class="breakdown-bar {{ card.css }}"><div class="breakdown-fill" style="width:{% widthratio card.breakdown.technologies.score card.breakdown.technologies.max 100 %}%"></div></div>
+            </div>
+            <div>
+              <div class="text-xs text-gray-600">Experience</div>
+              <div class="text-xs text-gray-400 font-medium">{{ card.breakdown.experience.score }}/{{ card.breakdown.experience.max }}</div>
+              <div class="breakdown-bar {{ card.css }}"><div class="breakdown-fill" style="width:{% widthratio card.breakdown.experience.score card.breakdown.experience.max 100 %}%"></div></div>
+            </div>
+          </div>
+
+          <!-- Matched skills chips -->
+          {% if card.breakdown.skills.matched %}
+          <div class="flex flex-wrap gap-1 mt-2">
+            {% for sk in card.breakdown.skills.matched %}
+            <span class="kw-chip">{{ sk }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- Actions -->
+          <div class="flex items-center gap-2 mt-3">
+            <a href="{{ card.job.url }}" target="_blank" rel="noopener noreferrer" class="btn-apply">
+              Apply
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            </a>
+            <button class="btn-save {% if card.is_saved %}saved{% endif %}"
+                    onclick="toggleSave(this, {{ card.job.id }})"
+                    title="{% if card.is_saved %}Remove from saved{% else %}Save for later{% endif %}">
+              <svg class="w-3.5 h-3.5" fill="{% if card.is_saved %}currentColor{% else %}none{% endif %}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+              <span>{% if card.is_saved %}Saved{% else %}Save{% endif %}</span>
+            </button>
+            <button class="btn-dismiss" onclick="dismissJob(this, {{ card.job.id }})" title="Not interested">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <span class="text-gray-700 text-xs ml-auto">{{ card.job.scraped_at|timesince }} ago</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+
+async function toggleSave(btn, jobId) {
+  const resp = await fetch(`/jobs/${jobId}/save/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/json' },
+  });
+  const data = await resp.json();
+  const icon = btn.querySelector('svg');
+  const label = btn.querySelector('span');
+  if (data.saved) {
+    btn.classList.add('saved');
+    icon.setAttribute('fill', 'currentColor');
+    label.textContent = 'Saved';
+    btn.title = 'Remove from saved';
+  } else {
+    btn.classList.remove('saved');
+    icon.setAttribute('fill', 'none');
+    label.textContent = 'Save';
+    btn.title = 'Save for later';
+  }
+}
+
+async function dismissJob(btn, jobId) {
+  const card = document.getElementById('job-' + jobId);
+  const resp = await fetch(`/jobs/${jobId}/dismiss/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF },
+  });
+  if (resp.ok) {
+    card.style.transition = 'opacity 0.25s, transform 0.25s';
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(20px)';
+    setTimeout(() => card.remove(), 260);
+  }
+}
+</script>
+{% endblock %}

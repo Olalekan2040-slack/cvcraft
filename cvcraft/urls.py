@@ -11,6 +11,7 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     path('dashboard/', include('resumes.urls')),
     path('billing/', include('billing.urls')),
+    path('jobs/', include('jobs.urls')),
     # Short public resume links
     path('r/<uuid:token>/', public_view, name='resume_public_short'),
     path('r/<uuid:token>/pdf/', public_pdf_download, name='resume_public_pdf'),
