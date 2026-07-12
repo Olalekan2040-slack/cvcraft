@@ -29,6 +29,12 @@ function builder() {
         aiResult: '',
         aiError: '',
         aiTarget: null,
+
+        // CV Analysis
+        analyzeModal: false,
+        analyzeLoading: false,
+        analyzeResult: null,
+        analyzeError: '',
         newSkill: '',
 
         // Debounce timers
@@ -238,14 +244,20 @@ function builder() {
 
         applyAIResult() {
             if (!this.aiResult || !this.aiTarget) return;
-            const { action, targetIdx } = this.aiTarget;
+            const { action, targetIdx, field } = this.aiTarget;
 
             if (action === 'summary') {
                 this.data.personal.summary = this.aiResult;
+            } else if (action === 'paraphrase' && field) {
+                if (field === 'summary') {
+                    this.data.personal.summary = this.aiResult;
+                } else if (field.startsWith('exp_desc_')) {
+                    const idx = parseInt(field.replace('exp_desc_', ''), 10);
+                    if (this.data.experience[idx]) this.data.experience[idx].description = this.aiResult;
+                }
             } else if (action === 'improve' && targetIdx !== undefined) {
                 if (this.data.experience[targetIdx]) {
                     const exp = this.data.experience[targetIdx];
-                    // Add as a new bullet
                     if (!exp.bullets) exp.bullets = [];
                     exp.bullets.push(this.aiResult);
                 }
@@ -254,6 +266,60 @@ function builder() {
             this.aiModal = false;
             this.updatePreview();
             this.$nextTick(() => lucide.createIcons());
+        },
+
+        async aiParaphrase(text, context, field) {
+            if (!text || !text.trim()) return;
+            this.aiModal = true;
+            this.aiLoading = true;
+            this.aiResult = '';
+            this.aiError = '';
+            this.aiTarget = { action: 'paraphrase', field };
+
+            try {
+                const resp = await fetch(AI_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+                    body: JSON.stringify({ action: 'paraphrase', content: text, context }),
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    this.aiResult = result.result;
+                } else {
+                    this.aiError = result.error || 'Paraphrase failed.';
+                }
+            } catch (e) {
+                this.aiError = 'Unable to connect to AI service.';
+            } finally {
+                this.aiLoading = false;
+                this.$nextTick(() => lucide.createIcons());
+            }
+        },
+
+        async analyzeCV() {
+            this.analyzeModal = true;
+            this.analyzeLoading = true;
+            this.analyzeResult = null;
+            this.analyzeError = '';
+
+            try {
+                const resp = await fetch(ANALYZE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+                    body: JSON.stringify({ resume_data: this.data }),
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    this.analyzeResult = result.analysis;
+                } else {
+                    this.analyzeError = result.error || 'Analysis failed.';
+                }
+            } catch (e) {
+                this.analyzeError = 'Unable to connect to AI service.';
+            } finally {
+                this.analyzeLoading = false;
+                this.$nextTick(() => lucide.createIcons());
+            }
         },
 
         // ── Sortable DnD ───────────────────────────────────

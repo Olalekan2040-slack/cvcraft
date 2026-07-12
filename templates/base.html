@@ -114,6 +114,9 @@
     <script src="{% static 'js/main.js' %}"></script>
     <script>lucide.createIcons();</script>
 
+    <!-- Keep-alive: ping every 30s to prevent Render cold starts -->
+    <script>setInterval(() => fetch('/ping/').catch(() => {}), 30000);</script>
+
     {% block extra_js %}{% endblock %}
 </body>
 

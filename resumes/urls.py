@@ -18,6 +18,7 @@ urlpatterns = [
     path('<int:pk>/export/json/', views.export_json, name='export_json'),
     path('<int:pk>/ats-score/', views.ats_score, name='ats_score'),
     path('ai/generate/', views.ai_generate, name='ai_generate'),
+    path('ai/analyze/', views.ai_analyze, name='ai_analyze'),
     path('upload/', views.upload_cv, name='upload_cv'),
     path('public/<uuid:token>/', views.public_view, name='public_view'),
 ]

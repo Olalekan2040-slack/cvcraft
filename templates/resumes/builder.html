@@ -98,6 +98,12 @@
                     x-text="atsScore + '%'"></span>
             </button>
 
+            <!-- Analyze CV -->
+            <button @click="analyzeCV()" class="btn-sm border-purple-500/40 text-purple-400 hover:bg-purple-500/10">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">Analyze CV</span>
+            </button>
+
             <!-- Save -->
             <button @click="saveResume()" :disabled="saving" class="btn-sm border-gold/40 text-gold hover:bg-gold/10">
                 <i data-lucide="save" class="w-3.5 h-3.5"></i>
@@ -183,11 +189,17 @@
                         <div class="col-span-2">
                             <div class="flex items-center justify-between mb-1.5">
                                 <label class="form-label mb-0">Professional Summary</label>
-                                <button
-                                    @click="aiGenerate('summary', data.personal.job_title + ' ' + data.personal.full_name)"
-                                    class="ai-btn">
-                                    <i data-lucide="sparkles" class="w-3 h-3"></i> AI Write
-                                </button>
+                                <div class="flex gap-1.5">
+                                    <button @click="aiParaphrase(data.personal.summary, 'Professional Summary', 'summary')"
+                                        class="ai-btn" title="Paraphrase with AI">
+                                        <i data-lucide="wand-2" class="w-3 h-3"></i> Polish
+                                    </button>
+                                    <button
+                                        @click="aiGenerate('summary', data.personal.job_title + ' ' + data.personal.full_name)"
+                                        class="ai-btn">
+                                        <i data-lucide="sparkles" class="w-3 h-3"></i> AI Write
+                                    </button>
+                                </div>
                             </div>
                             <textarea x-model="data.personal.summary" @input="debouncedPreview()" rows="4"
                                 class="form-input resize-none"
@@ -257,7 +269,13 @@
                                                 class="form-input" placeholder="San Francisco, CA">
                                         </div>
                                         <div class="col-span-2">
-                                            <label class="form-label">Description</label>
+                                            <div class="flex items-center justify-between mb-1.5">
+                                                <label class="form-label mb-0">Description</label>
+                                                <button @click="aiParaphrase(exp.description, 'Work Experience description', 'exp_desc_' + idx)"
+                                                    class="ai-btn" title="Polish with AI">
+                                                    <i data-lucide="wand-2" class="w-3 h-3"></i> Polish
+                                                </button>
+                                            </div>
                                             <textarea x-model="exp.description" @input="debouncedPreview()" rows="3"
                                                 class="form-input resize-none"
                                                 placeholder="Brief overview of your role..."></textarea>
@@ -573,6 +591,101 @@
         </div>
     </div>
 
+    <!-- CV Analysis Modal -->
+    <div x-show="analyzeModal" x-transition class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+        @click.self="analyzeModal = false">
+        <div class="bg-dark-card border border-dark-border rounded-2xl p-6 max-w-2xl w-full shadow-card animate-slide-up max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-purple-400"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-white">CV Analysis</h3>
+                </div>
+                <button @click="analyzeModal = false" class="text-gray-500 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div x-show="analyzeLoading" class="text-center py-12">
+                <div class="loading-spinner mx-auto mb-3"></div>
+                <p class="text-gray-400 text-sm">Gemini is reviewing your CV...</p>
+            </div>
+
+            <div x-show="analyzeError" class="text-red-400 text-sm py-4">
+                <i data-lucide="alert-circle" class="w-4 h-4 inline mr-1"></i>
+                <span x-text="analyzeError"></span>
+            </div>
+
+            <div x-show="!analyzeLoading && analyzeResult" class="space-y-5">
+                <!-- Score -->
+                <div class="flex items-center gap-4 p-4 rounded-xl bg-dark-surface border border-dark-border">
+                    <div class="text-center">
+                        <div class="text-4xl font-bold"
+                            :class="analyzeResult?.overall_score >= 75 ? 'text-emerald-400' : analyzeResult?.overall_score >= 50 ? 'text-amber-400' : 'text-red-400'"
+                            x-text="analyzeResult?.overall_score + '%'"></div>
+                        <div class="text-xs text-gray-500 mt-1">CV Score</div>
+                    </div>
+                    <div class="flex-1">
+                        <div class="h-2 bg-dark-border rounded-full overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-700"
+                                :class="analyzeResult?.overall_score >= 75 ? 'bg-emerald-400' : analyzeResult?.overall_score >= 50 ? 'bg-amber-400' : 'bg-red-400'"
+                                :style="'width:' + (analyzeResult?.overall_score || 0) + '%'"></div>
+                        </div>
+                        <p class="text-gray-400 text-sm mt-2" x-text="analyzeResult?.summary"></p>
+                    </div>
+                </div>
+
+                <!-- Strengths -->
+                <div x-show="analyzeResult?.strengths?.length">
+                    <h4 class="text-sm font-semibold text-emerald-400 mb-2 flex items-center gap-1">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Strengths
+                    </h4>
+                    <ul class="space-y-1.5">
+                        <template x-for="s in analyzeResult?.strengths || []">
+                            <li class="flex items-start gap-2 text-sm text-gray-300">
+                                <span class="text-emerald-400 mt-0.5 flex-shrink-0">✓</span>
+                                <span x-text="s"></span>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+
+                <!-- Improvements -->
+                <div x-show="analyzeResult?.improvements?.length">
+                    <h4 class="text-sm font-semibold text-amber-400 mb-2 flex items-center gap-1">
+                        <i data-lucide="alert-triangle" class="w-4 h-4"></i> Areas to Improve
+                    </h4>
+                    <div class="space-y-2">
+                        <template x-for="item in analyzeResult?.improvements || []">
+                            <div class="p-3 rounded-lg bg-amber-900/10 border border-amber-700/20">
+                                <p class="text-xs font-semibold text-amber-400 uppercase tracking-wide mb-1" x-text="item.section"></p>
+                                <p class="text-sm text-gray-400 mb-1" x-text="item.issue"></p>
+                                <p class="text-sm text-gray-300"><span class="text-amber-300 font-medium">Fix: </span><span x-text="item.fix"></span></p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Missing sections -->
+                <div x-show="analyzeResult?.missing?.length">
+                    <h4 class="text-sm font-semibold text-blue-400 mb-2 flex items-center gap-1">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> Missing / Recommended
+                    </h4>
+                    <div class="flex flex-wrap gap-2">
+                        <template x-for="m in analyzeResult?.missing || []">
+                            <span class="px-2.5 py-1 rounded-full text-xs bg-blue-900/20 border border-blue-700/30 text-blue-300" x-text="m"></span>
+                        </template>
+                    </div>
+                </div>
+
+                <button @click="analyzeCV()" class="w-full btn-outline text-sm py-2">
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5 mr-1"></i> Re-analyze
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- AI Result Modal -->
     <div x-show="aiModal" x-transition class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
         @click.self="aiModal = false">
@@ -620,6 +733,7 @@
     const SAVE_URL = "{% url 'resumes:save' resume.pk %}";
     const ATS_URL = "{% url 'resumes:ats_score' resume.pk %}";
     const AI_URL = "{% url 'resumes:ai_generate' %}";
+    const ANALYZE_URL = "{% url 'resumes:ai_analyze' %}";
 </script>
 <script src="{% static 'js/builder.js' %}"></script>
 {% endblock %}

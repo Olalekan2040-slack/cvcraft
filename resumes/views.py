@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST, require_http_methods
+from django.views.decorators.clickjacking import xframe_options_exempt
 from django.conf import settings
 from .models import Resume, ExportLog, DEFAULT_RESUME_DATA, TEMPLATE_CHOICES
 
@@ -126,6 +127,7 @@ def save_resume(request, pk):
 # ── Preview (partial HTML) ───────────────────────────────────────────────────
 
 @login_required
+@xframe_options_exempt
 def preview_resume(request, pk):
     resume = get_object_or_404(Resume, pk=pk, user=request.user)
     resume_data = resume.get_data()
@@ -280,15 +282,92 @@ def ai_generate(request):
                 f"List 10 powerful ATS resume keywords for this job description. "
                 f"Output as a comma-separated list only: {context}"
             ),
+            'paraphrase': (
+                f"You are a professional CV writer. Rewrite the following text to be more "
+                f"concise, polished, and impactful for a CV/resume context ({context}). "
+                f"Use strong, professional language. Keep approximately the same length. "
+                f"Output only the improved text, no explanations:\n\n{content}"
+            ),
         }
 
-        result = _gemini_generate(prompts.get(action, prompts['improve']))
+        result = _gemini_generate(prompts.get(action, prompts['paraphrase']))
         return JsonResponse({'success': True, 'result': result})
 
     except Exception as e:
         err = str(e).lower()
         if 'quota' in err or '429' in err or 'exhausted' in err or 'rate' in err:
             return JsonResponse({'error': 'AI quota exceeded. Please try again later or upgrade your Gemini plan.'}, status=429)
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def ai_analyze(request):
+    api_key = settings.GEMINI_API_KEY
+    if not api_key:
+        return JsonResponse({'error': 'AI service not configured.'}, status=503)
+    try:
+        payload = json.loads(request.body)
+        resume_data = payload.get('resume_data', {})
+
+        personal = resume_data.get('personal', {})
+        skills = resume_data.get('skills', [])
+        experience = resume_data.get('experience', [])
+        education = resume_data.get('education', [])
+        projects = resume_data.get('projects', [])
+
+        skill_names = [s.get('name', s) if isinstance(s, dict) else s for s in skills]
+
+        formatted = f"""
+NAME: {personal.get('full_name', 'Unknown')}
+TITLE: {personal.get('job_title', 'Not specified')}
+SUMMARY: {personal.get('summary', 'Not provided')}
+
+SKILLS ({len(skill_names)}): {', '.join(skill_names[:20])}
+
+EXPERIENCE ({len(experience)} entries):
+{''.join(f"- {e.get('position','')} at {e.get('company','')} ({e.get('start_date','')}–{e.get('end_date','present')}): {len(e.get('bullets',[]))} bullets" for e in experience)}
+
+EDUCATION ({len(education)} entries):
+{''.join(f"- {e.get('degree','')} from {e.get('school','')} ({e.get('year','')})" for e in education)}
+
+PROJECTS ({len(projects)} entries):
+{''.join(f"- {p.get('name','')}: {p.get('description','')[:80]}" for p in projects)}
+""".strip()
+
+        prompt = f"""You are an expert CV reviewer and career coach. Analyze this resume and give specific, actionable feedback.
+
+RESUME DATA:
+{formatted}
+
+Respond in this exact JSON format (no markdown, no code blocks, just raw JSON):
+{{
+  "overall_score": <integer 0-100>,
+  "grade": "<A/B/C/D/F>",
+  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
+  "improvements": [
+    {{"section": "<section name>", "issue": "<specific issue>", "fix": "<actionable fix>"}}
+  ],
+  "missing": ["<missing element 1>", "<missing element 2>"],
+  "summary": "<2-3 sentence overall assessment>"
+}}"""
+
+        raw = _gemini_generate(prompt)
+        # strip markdown fences if present
+        raw = re.sub(r'^```(?:json)?\s*', '', raw.strip(), flags=re.MULTILINE)
+        raw = re.sub(r'\s*```$', '', raw.strip(), flags=re.MULTILINE)
+        analysis = json.loads(raw)
+        return JsonResponse({'success': True, 'analysis': analysis})
+    except json.JSONDecodeError:
+        return JsonResponse({'success': True, 'analysis': {
+            'overall_score': 0, 'grade': '?',
+            'strengths': [], 'improvements': [],
+            'missing': [], 'summary': 'Could not parse AI response. Please try again.',
+        }})
+    except Exception as e:
+        err = str(e).lower()
+        if 'quota' in err or '429' in err:
+            return JsonResponse({'error': 'AI quota exceeded. Try again later.'}, status=429)
         return JsonResponse({'error': str(e)}, status=500)
 
 
