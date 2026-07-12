@@ -1,13 +1,94 @@
+import threading
+import logging
+
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.db.models import Q
+from django.utils import timezone
 
 from resumes.models import Resume
 from .models import JobListing, UserJobInteraction, JobScrapeLog
 from .services.ats import calculate_ats_score, score_label, score_css_class
 from .services.keywords import extract_keywords
+
+logger = logging.getLogger(__name__)
+
+_FALLBACK_KEYWORDS = [
+    'software engineer', 'python developer', 'django developer',
+    'full stack developer', 'backend developer', 'javascript developer',
+    'react developer', 'vue developer', 'nodejs developer',
+    'data analyst', 'data scientist', 'machine learning engineer',
+    'web developer', 'frontend developer', 'devops engineer',
+    'product manager', 'ux designer', 'ui designer',
+]
+
+
+def _run_scrape_background(log_id):
+    """Run scrape_all in a background thread and update the log when done."""
+    from .services.scraper import scrape_all
+
+    log = JobScrapeLog.objects.get(pk=log_id)
+    try:
+        kw_set = set()
+        for resume in Resume.objects.all():
+            try:
+                kw_set.update(extract_keywords(resume.get_data()))
+            except Exception:
+                pass
+        keywords = list(kw_set) if kw_set else _FALLBACK_KEYWORDS
+
+        raw = scrape_all(keywords)
+        new_count = 0
+        skip_count = 0
+        sources_seen = set()
+
+        for item in raw:
+            url = (item.get('url') or '').strip()
+            if not url:
+                skip_count += 1
+                continue
+            sources_seen.add(item['source_name'])
+            _, created = JobListing.objects.get_or_create(
+                url=url,
+                defaults={
+                    'source_name': item['source_name'],
+                    'title': item['title'],
+                    'company': item.get('company', ''),
+                    'location': item.get('location', ''),
+                    'description': item.get('description', ''),
+                    'keywords_matched': item.get('keywords_matched', []),
+                },
+            )
+            if created:
+                new_count += 1
+            else:
+                skip_count += 1
+
+        log.ended_at = timezone.now()
+        log.listings_new = new_count
+        log.listings_skipped = skip_count
+        log.sources_run = len(sources_seen)
+        log.status = 'done'
+        log.save()
+        logger.info("Background scrape done: %d new, %d skipped", new_count, skip_count)
+    except Exception as exc:
+        logger.exception("Background scrape failed")
+        log.status = 'error'
+        log.errors = [str(exc)]
+        log.ended_at = timezone.now()
+        log.save()
+
+
+def start_scrape_thread():
+    """Create a running log entry and kick off _run_scrape_background."""
+    if JobScrapeLog.objects.filter(status='running').exists():
+        return None
+    log = JobScrapeLog.objects.create(status='running')
+    t = threading.Thread(target=_run_scrape_background, args=(log.pk,), daemon=True)
+    t.start()
+    return log
 
 
 def _primary_resume_data(user):
@@ -113,3 +194,28 @@ def dismiss_job(request, job_id):
         defaults={'status': UserJobInteraction.STATUS_DISMISSED},
     )
     return JsonResponse({'dismissed': True})
+
+
+@login_required
+@require_POST
+def trigger_scrape(request):
+    """Kick off a background scrape if none is already running."""
+    if JobScrapeLog.objects.filter(status='running').exists():
+        return JsonResponse({'status': 'already_running'})
+    log = start_scrape_thread()
+    if log:
+        return JsonResponse({'status': 'started'})
+    return JsonResponse({'status': 'already_running'})
+
+
+@login_required
+def scrape_status(request):
+    """Poll endpoint: returns current scrape progress and job count."""
+    running = JobScrapeLog.objects.filter(status='running').exists()
+    total = JobListing.objects.filter(is_active=True).count()
+    last = JobScrapeLog.objects.filter(status='done').order_by('-ended_at').first()
+    return JsonResponse({
+        'running': running,
+        'total_jobs': total,
+        'last_scrape': last.ended_at.isoformat() if last and last.ended_at else None,
+    })

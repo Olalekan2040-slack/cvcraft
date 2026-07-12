@@ -114,15 +114,22 @@
       </h1>
       <p class="text-gray-500 text-sm mt-1">
         Jobs matched to your CV profile &bull;
-        {% if total_jobs %}{{ total_jobs }} listing{{ total_jobs|pluralize }} indexed{% else %}No listings yet — run a scrape{% endif %}
-        {% if last_scrape %}&bull; last updated {{ last_scrape.started_at|timesince }} ago{% endif %}
+        {% if total_jobs %}{{ total_jobs }} listing{{ total_jobs|pluralize }} indexed{% else %}No listings yet{% endif %}
+        {% if last_scrape %}&bull; last updated {{ last_scrape.ended_at|timesince }} ago{% endif %}
       </p>
     </div>
-    {% if not has_resume %}
-    <a href="{% url 'resumes:create' %}" class="btn-gold text-sm">
-      Build your CV first
-    </a>
-    {% endif %}
+    <div class="flex gap-2 items-center flex-shrink-0">
+      {% if not has_resume %}
+      <a href="{% url 'resumes:create' %}" class="btn-gold text-sm">
+        Build your CV first
+      </a>
+      {% endif %}
+      <button id="refresh-btn" onclick="fetchJobs()" title="Fetch fresh jobs from all sources"
+        class="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-gray-700 text-gray-400 hover:border-gold hover:text-gold transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        Refresh
+      </button>
+    </div>
   </div>
 
   <!-- No resume warning -->
@@ -164,7 +171,7 @@
 
   <!-- Empty state -->
   {% if not cards %}
-  <div class="text-center py-20">
+  <div class="text-center py-20" id="empty-state">
     <svg class="w-16 h-16 text-gray-700 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
     {% if tab == 'saved' %}
     <p class="text-gray-500 text-lg">No saved jobs yet.</p>
@@ -174,8 +181,24 @@
     <p class="text-gray-500 text-lg">No jobs match "{{ q }}".</p>
     <a href="{% url 'jobs:feed' %}" class="text-gold hover:underline text-sm">Clear search</a>
     {% else %}
-    <p class="text-gray-500 text-lg">No jobs indexed yet.</p>
-    <p class="text-gray-600 text-sm mt-1">Run <code class="text-gold">python manage.py scrape_jobs</code> to populate the feed.</p>
+    <p class="text-gray-500 text-lg" id="empty-title">No jobs indexed yet.</p>
+    <p class="text-gray-600 text-sm mt-1" id="empty-sub">Click below to fetch live job listings from 7 sources. This takes about 60 seconds.</p>
+    <button id="fetch-btn" onclick="fetchJobs()" class="btn-gold mt-5 inline-flex items-center gap-2 px-6 py-3">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      Fetch Fresh Jobs
+    </button>
+    <!-- Scraping progress (hidden initially) -->
+    <div id="scrape-progress" class="hidden mt-6">
+      <div class="flex items-center justify-center gap-3 text-gold">
+        <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <span class="font-medium">Scanning job boards&hellip;</span>
+      </div>
+      <p class="text-gray-600 text-sm mt-2">Checking Remotive, Himalayas, Remote OK and 4 more sources.</p>
+      <p class="text-gray-700 text-xs mt-1">This page will refresh automatically when done.</p>
+    </div>
     {% endif %}
   </div>
   {% endif %}
@@ -277,6 +300,66 @@
 
 <script>
 const CSRF = '{{ csrf_token }}';
+const TRIGGER_URL = '{% url "jobs:trigger_scrape" %}';
+const STATUS_URL  = '{% url "jobs:scrape_status" %}';
+
+let _pollTimer = null;
+
+async function fetchJobs() {
+  const fetchBtn = document.getElementById('fetch-btn');
+  const refreshBtn = document.getElementById('refresh-btn');
+  const progress = document.getElementById('scrape-progress');
+  const sub = document.getElementById('empty-sub');
+
+  if (fetchBtn) fetchBtn.disabled = true;
+  if (refreshBtn) { refreshBtn.disabled = true; refreshBtn.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Scanning…'; }
+
+  const resp = await fetch(TRIGGER_URL, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF },
+  });
+  const data = await resp.json();
+
+  if (data.status === 'started' || data.status === 'already_running') {
+    if (fetchBtn) fetchBtn.classList.add('hidden');
+    if (sub) sub.classList.add('hidden');
+    if (progress) progress.classList.remove('hidden');
+    _pollTimer = setInterval(pollStatus, 4000);
+  } else {
+    if (fetchBtn) fetchBtn.disabled = false;
+    if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Refresh'; }
+  }
+}
+
+async function pollStatus() {
+  try {
+    const resp = await fetch(STATUS_URL);
+    const data = await resp.json();
+    if (!data.running && data.total_jobs > 0) {
+      clearInterval(_pollTimer);
+      window.location.reload();
+    }
+  } catch (_) {}
+}
+
+// Auto-start polling if a scrape is already in progress when the page loads
+(async function autoCheckOnLoad() {
+  {% if not cards and tab != 'saved' and not q %}
+  try {
+    const resp = await fetch(STATUS_URL);
+    const data = await resp.json();
+    if (data.running) {
+      const btn = document.getElementById('fetch-btn');
+      const progress = document.getElementById('scrape-progress');
+      const sub = document.getElementById('empty-sub');
+      if (btn) btn.classList.add('hidden');
+      if (sub) sub.classList.add('hidden');
+      if (progress) progress.classList.remove('hidden');
+      _pollTimer = setInterval(pollStatus, 4000);
+    }
+  } catch (_) {}
+  {% endif %}
+})();
 
 async function toggleSave(btn, jobId) {
   const resp = await fetch(`/jobs/${jobId}/save/`, {
