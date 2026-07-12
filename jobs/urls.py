@@ -9,4 +9,5 @@ urlpatterns = [
     path('<int:job_id>/dismiss/', views.dismiss_job, name='dismiss'),
     path('scrape/trigger/', views.trigger_scrape, name='trigger_scrape'),
     path('scrape/status/', views.scrape_status, name='scrape_status'),
+    path('preferences/', views.save_preferences, name='save_preferences'),
 ]

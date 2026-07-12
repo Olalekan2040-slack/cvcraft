@@ -8,8 +8,10 @@ from django.views.decorators.http import require_POST
 from django.db.models import Q
 from django.utils import timezone
 
+import json
+
 from resumes.models import Resume
-from .models import JobListing, UserJobInteraction, JobScrapeLog
+from .models import JobListing, UserJobInteraction, JobScrapeLog, JobPreference, LOCATION_CHOICES, LOCATION_KEYWORDS
 from .services.ats import calculate_ats_score, score_label, score_css_class
 from .services.keywords import extract_keywords
 
@@ -96,12 +98,42 @@ def _primary_resume_data(user):
     return resume.get_data() if resume else {}
 
 
+def _location_matches(job_location: str, preferred: list) -> bool:
+    """
+    Return True if the job should be shown given the user's location preferences.
+    Jobs tagged Remote/Worldwide always pass. Empty preference = show all.
+    """
+    if not preferred or 'worldwide' in preferred:
+        return True
+
+    loc_lower = (' ' + (job_location or '').lower() + ' ')
+
+    # Always show remote/worldwide jobs regardless of filter
+    universal = ['remote', 'worldwide', 'anywhere', 'global', 'international']
+    if any(u in loc_lower for u in universal):
+        return True
+    # Empty location → assume worldwide
+    if not job_location or not job_location.strip():
+        return True
+
+    # Check preferred countries
+    for code in preferred:
+        keywords = LOCATION_KEYWORDS.get(code, [])
+        if any(k in loc_lower for k in keywords):
+            return True
+    return False
+
+
 @login_required
 def feed(request):
     resume_data = _primary_resume_data(request.user)
     keywords = extract_keywords(resume_data)
     tab = request.GET.get('tab', 'all')
     q = request.GET.get('q', '').strip()
+
+    # Load or create user location preferences
+    pref, _ = JobPreference.objects.get_or_create(user=request.user)
+    preferred_locations = pref.preferred_locations or []
 
     dismissed_ids = set(
         UserJobInteraction.objects.filter(
@@ -126,7 +158,14 @@ def feed(request):
             Q(location__icontains=q) | Q(description__icontains=q)
         )
 
-    jobs = list(qs.order_by('-scraped_at')[:200])
+    jobs = list(qs.order_by('-scraped_at')[:500])
+
+    # Apply location filter
+    if preferred_locations and 'worldwide' not in preferred_locations:
+        jobs = [j for j in jobs if _location_matches(j.location, preferred_locations)]
+
+    # Cap after location filter
+    jobs = jobs[:200]
 
     cards = []
     for job in jobs:
@@ -141,11 +180,13 @@ def feed(request):
             'breakdown': breakdown,
             'snippet': job.description_snippet(),
             'is_saved': job.id in saved_map,
+            'stack_fit': breakdown.get('stack', {}).get('fit', 'unknown'),
+            'job_langs': breakdown.get('stack', {}).get('job_langs', []),
         })
 
     cards.sort(key=lambda c: c['score'], reverse=True)
 
-    last_scrape = JobScrapeLog.objects.filter(status='done').first()
+    last_scrape = JobScrapeLog.objects.filter(status='done').order_by('-ended_at').first()
     total_jobs = JobListing.objects.filter(is_active=True).count()
 
     return render(request, 'jobs/feed.html', {
@@ -157,6 +198,8 @@ def feed(request):
         'total_jobs': total_jobs,
         'saved_count': len(saved_map),
         'last_scrape': last_scrape,
+        'preferred_locations': preferred_locations,
+        'location_choices': LOCATION_CHOICES,
     })
 
 
@@ -194,6 +237,24 @@ def dismiss_job(request, job_id):
         defaults={'status': UserJobInteraction.STATUS_DISMISSED},
     )
     return JsonResponse({'dismissed': True})
+
+
+@login_required
+@require_POST
+def save_preferences(request):
+    """Save user's preferred job locations."""
+    try:
+        body = json.loads(request.body)
+        locations = body.get('preferred_locations', [])
+        # Validate: only allow known codes
+        valid_codes = {code for code, _ in LOCATION_CHOICES}
+        locations = [loc for loc in locations if loc in valid_codes]
+        pref, _ = JobPreference.objects.get_or_create(user=request.user)
+        pref.preferred_locations = locations
+        pref.save()
+        return JsonResponse({'ok': True, 'saved': locations})
+    except Exception as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
 
 
 @login_required

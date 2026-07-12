@@ -28,10 +28,7 @@
     transition: border-color 0.15s, transform 0.1s;
     position: relative;
   }
-  .job-card:hover {
-    border-color: #2d3548;
-    transform: translateY(-1px);
-  }
+  .job-card:hover { border-color: #2d3548; transform: translateY(-1px); }
 
   .source-badge {
     display: inline-flex; align-items: center; gap: 5px;
@@ -39,11 +36,7 @@
     background: #1a1f2e; border: 1px solid #252b3d;
     padding: 2px 8px; border-radius: 20px;
   }
-  .source-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--ats-color, #6b7280);
-    flex-shrink: 0;
-  }
+  .source-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ats-color, #6b7280); flex-shrink: 0; }
 
   .kw-chip {
     display: inline-block;
@@ -52,6 +45,15 @@
     border: 1px solid rgba(201,168,76,0.2);
     padding: 1px 7px; border-radius: 10px;
   }
+
+  /* Stack fit badges */
+  .stack-match   { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 600;
+                   background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.25); }
+  .stack-partial { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 600;
+                   background: rgba(245,158,11,0.1); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
+  .stack-mismatch{ font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 600;
+                   background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+  .stack-unknown { display: none; }
 
   .btn-save {
     display: inline-flex; align-items: center; gap: 4px;
@@ -84,21 +86,21 @@
     color: #6b7280; cursor: pointer; text-decoration: none;
     transition: all 0.15s;
   }
-  .tab-btn.active, .tab-btn:hover {
-    background: #C9A84C; color: #0f1117;
-    border-color: #C9A84C; font-weight: 600;
-  }
+  .tab-btn.active, .tab-btn:hover { background: #C9A84C; color: #0f1117; border-color: #C9A84C; font-weight: 600; }
 
-  .breakdown-bar {
-    height: 4px; border-radius: 2px;
-    background: rgba(255,255,255,0.06);
-    overflow: hidden; margin-top: 3px;
+  .breakdown-bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.06); overflow: hidden; margin-top: 3px; }
+  .breakdown-fill { height: 100%; border-radius: 2px; background: var(--ats-color); transition: width 0.4s ease; }
+
+  /* Location filter panel */
+  .loc-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; padding: 4px 10px; border-radius: 20px; cursor: pointer;
+    border: 1px solid #2a3145; background: #181e2a; color: #9ca3af;
+    transition: all 0.15s; user-select: none;
   }
-  .breakdown-fill {
-    height: 100%; border-radius: 2px;
-    background: var(--ats-color);
-    transition: width 0.4s ease;
-  }
+  .loc-chip:hover { border-color: #C9A84C40; color: #d1d5db; }
+  .loc-chip.selected { background: rgba(201,168,76,0.12); border-color: #C9A84C; color: #C9A84C; font-weight: 600; }
+
   @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
   .job-card { animation: fadeIn 0.25s ease both; }
 </style>
@@ -115,16 +117,14 @@
       <p class="text-gray-500 text-sm mt-1">
         Jobs matched to your CV profile &bull;
         {% if total_jobs %}{{ total_jobs }} listing{{ total_jobs|pluralize }} indexed{% else %}No listings yet{% endif %}
-        {% if last_scrape %}&bull; last updated {{ last_scrape.ended_at|timesince }} ago{% endif %}
+        {% if last_scrape %}&bull; updated {{ last_scrape.ended_at|timesince }} ago{% endif %}
       </p>
     </div>
     <div class="flex gap-2 items-center flex-shrink-0">
       {% if not has_resume %}
-      <a href="{% url 'resumes:create' %}" class="btn-gold text-sm">
-        Build your CV first
-      </a>
+      <a href="{% url 'resumes:create' %}" class="btn-gold text-sm">Build your CV first</a>
       {% endif %}
-      <button id="refresh-btn" onclick="fetchJobs()" title="Fetch fresh jobs from all sources"
+      <button id="refresh-btn" onclick="fetchJobs()" title="Fetch fresh jobs"
         class="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-gray-700 text-gray-400 hover:border-gold hover:text-gold transition-colors">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
         Refresh
@@ -140,7 +140,7 @@
   </div>
   {% endif %}
 
-  <!-- Your profile keywords -->
+  <!-- CV keywords -->
   {% if keywords %}
   <div class="mb-5">
     <p class="text-xs text-gray-600 mb-2 uppercase tracking-wider">Detected from your CV</p>
@@ -149,6 +149,54 @@
     </div>
   </div>
   {% endif %}
+
+  <!-- ── Location & Stack Preference Panel ── -->
+  <div class="bg-dark-card border border-dark-border rounded-xl mb-6 overflow-hidden" x-data="{ open: {{ preferred_locations|length|yesno:'true,false' }} }">
+    <button @click="open = !open"
+      class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors">
+      <span class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Location Filter
+        {% if preferred_locations %}
+        <span class="text-xs bg-gold/20 text-gold px-2 py-0.5 rounded-full border border-gold/30">
+          {{ preferred_locations|length }} active
+        </span>
+        {% else %}
+        <span class="text-xs text-gray-600">— showing all countries</span>
+        {% endif %}
+      </span>
+      <svg class="w-4 h-4 text-gray-500 transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+
+    <div x-show="open" x-transition class="px-4 pb-4 border-t border-dark-border pt-4">
+      <p class="text-xs text-gray-500 mb-3">
+        Select where you want to work. Remote/Worldwide jobs are always shown.
+        Your selection is saved automatically.
+      </p>
+      <div class="flex flex-wrap gap-2" id="loc-chips">
+        {% for code, label in location_choices %}
+        <span class="loc-chip {% if code in preferred_locations %}selected{% endif %}"
+              data-code="{{ code }}"
+              onclick="toggleLocation(this)">
+          {% if code == 'worldwide' %}🌍{% elif code == 'usa' %}🇺🇸{% elif code == 'uk' %}🇬🇧
+          {% elif code == 'canada' %}🇨🇦{% elif code == 'australia' %}🇦🇺{% elif code == 'germany' %}🇩🇪
+          {% elif code == 'netherlands' %}🇳🇱{% elif code == 'france' %}🇫🇷{% elif code == 'spain' %}🇪🇸
+          {% elif code == 'nigeria' %}🇳🇬{% elif code == 'india' %}🇮🇳{% elif code == 'south_africa' %}🇿🇦
+          {% elif code == 'ghana' %}🇬🇭{% elif code == 'kenya' %}🇰🇪{% elif code == 'brazil' %}🇧🇷
+          {% elif code == 'singapore' %}🇸🇬{% elif code == 'uae' %}🇦🇪{% elif code == 'europe' %}🇪🇺
+          {% endif %}
+          {{ label }}
+        </span>
+        {% endfor %}
+      </div>
+      <div class="flex items-center justify-between mt-4">
+        <button onclick="clearLocations()" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">
+          Clear all
+        </button>
+        <span id="pref-status" class="text-xs text-gray-600"></span>
+      </div>
+    </div>
+  </div>
 
   <!-- Search + tabs -->
   <div class="flex flex-col sm:flex-row gap-3 mb-6">
@@ -180,6 +228,10 @@
     {% elif q %}
     <p class="text-gray-500 text-lg">No jobs match "{{ q }}".</p>
     <a href="{% url 'jobs:feed' %}" class="text-gold hover:underline text-sm">Clear search</a>
+    {% elif preferred_locations %}
+    <p class="text-gray-500 text-lg">No jobs match your location filter.</p>
+    <p class="text-gray-600 text-sm mt-1">Try adding more countries or clear the filter to see all remote jobs.</p>
+    <button onclick="clearLocations()" class="btn-gold mt-4 inline-block">Clear location filter</button>
     {% else %}
     <p class="text-gray-500 text-lg" id="empty-title">No jobs indexed yet.</p>
     <p class="text-gray-600 text-sm mt-1" id="empty-sub">Click below to fetch live job listings from 7 sources. This takes about 60 seconds.</p>
@@ -187,7 +239,6 @@
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
       Fetch Fresh Jobs
     </button>
-    <!-- Scraping progress (hidden initially) -->
     <div id="scrape-progress" class="hidden mt-6">
       <div class="flex items-center justify-center gap-3 text-gold">
         <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -229,10 +280,26 @@
                 {% endif %}
               </div>
             </div>
-            <span class="source-badge {{ card.css }}">
-              <span class="source-dot"></span>
-              {{ card.job.source_name }}
-            </span>
+            <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">
+              <!-- Stack fit badge -->
+              {% if card.stack_fit == 'match' %}
+              <span class="stack-match" title="Your stack matches this job">
+                ✓ Stack match{% if card.job_langs %} · {{ card.job_langs.0 }}{% endif %}
+              </span>
+              {% elif card.stack_fit == 'partial' %}
+              <span class="stack-partial" title="Partial tech overlap">
+                ~ Partial{% if card.job_langs %} · {{ card.job_langs.0 }}{% endif %}
+              </span>
+              {% elif card.stack_fit == 'mismatch' %}
+              <span class="stack-mismatch" title="Job requires a different language stack">
+                ✗ Stack diff{% if card.job_langs %} · {{ card.job_langs.0 }}{% endif %}
+              </span>
+              {% endif %}
+              <span class="source-badge {{ card.css }}">
+                <span class="source-dot"></span>
+                {{ card.job.source_name }}
+              </span>
+            </div>
           </div>
 
           <!-- Description snippet -->
@@ -299,20 +366,75 @@
 </div>
 
 <script>
-const CSRF = '{{ csrf_token }}';
-const TRIGGER_URL = '{% url "jobs:trigger_scrape" %}';
-const STATUS_URL  = '{% url "jobs:scrape_status" %}';
+const CSRF             = '{{ csrf_token }}';
+const TRIGGER_URL      = '{% url "jobs:trigger_scrape" %}';
+const STATUS_URL       = '{% url "jobs:scrape_status" %}';
+const PREFERENCES_URL  = '{% url "jobs:save_preferences" %}';
 
+// ── Location preferences ──────────────────────────────────────────────────────
+let _selectedLocs = new Set({{ preferred_locations|safe }});
+let _prefSaveTimer = null;
+
+function toggleLocation(chip) {
+  const code = chip.dataset.code;
+  if (_selectedLocs.has(code)) {
+    _selectedLocs.delete(code);
+    chip.classList.remove('selected');
+  } else {
+    _selectedLocs.add(code);
+    chip.classList.add('selected');
+  }
+  schedulePrefSave();
+}
+
+function clearLocations() {
+  _selectedLocs.clear();
+  document.querySelectorAll('.loc-chip').forEach(c => c.classList.remove('selected'));
+  schedulePrefSave();
+  // Reload to apply cleared filter
+  setTimeout(() => window.location.reload(), 600);
+}
+
+function schedulePrefSave() {
+  clearTimeout(_prefSaveTimer);
+  const status = document.getElementById('pref-status');
+  if (status) status.textContent = 'Saving…';
+  _prefSaveTimer = setTimeout(savePreferences, 800);
+}
+
+async function savePreferences() {
+  const locs = Array.from(_selectedLocs);
+  try {
+    const resp = await fetch(PREFERENCES_URL, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ preferred_locations: locs }),
+    });
+    const data = await resp.json();
+    const status = document.getElementById('pref-status');
+    if (data.ok) {
+      if (status) status.textContent = 'Saved ✓';
+      setTimeout(() => window.location.reload(), 400);
+    } else {
+      if (status) status.textContent = 'Save failed';
+    }
+  } catch (_) {}
+}
+
+// ── Scrape trigger + polling ──────────────────────────────────────────────────
 let _pollTimer = null;
 
 async function fetchJobs() {
-  const fetchBtn = document.getElementById('fetch-btn');
+  const fetchBtn  = document.getElementById('fetch-btn');
   const refreshBtn = document.getElementById('refresh-btn');
-  const progress = document.getElementById('scrape-progress');
-  const sub = document.getElementById('empty-sub');
+  const progress  = document.getElementById('scrape-progress');
+  const sub       = document.getElementById('empty-sub');
 
   if (fetchBtn) fetchBtn.disabled = true;
-  if (refreshBtn) { refreshBtn.disabled = true; refreshBtn.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Scanning…'; }
+  if (refreshBtn) {
+    refreshBtn.disabled = true;
+    refreshBtn.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Scanning…';
+  }
 
   const resp = await fetch(TRIGGER_URL, {
     method: 'POST',
@@ -327,7 +449,10 @@ async function fetchJobs() {
     _pollTimer = setInterval(pollStatus, 4000);
   } else {
     if (fetchBtn) fetchBtn.disabled = false;
-    if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Refresh'; }
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Refresh';
+    }
   }
 }
 
@@ -342,9 +467,8 @@ async function pollStatus() {
   } catch (_) {}
 }
 
-// Auto-start polling if a scrape is already in progress when the page loads
 (async function autoCheckOnLoad() {
-  {% if not cards and tab != 'saved' and not q %}
+  {% if not cards and tab != 'saved' and not q and not preferred_locations %}
   try {
     const resp = await fetch(STATUS_URL);
     const data = await resp.json();
@@ -361,6 +485,7 @@ async function pollStatus() {
   {% endif %}
 })();
 
+// ── Card actions ──────────────────────────────────────────────────────────────
 async function toggleSave(btn, jobId) {
   const resp = await fetch(`/jobs/${jobId}/save/`, {
     method: 'POST',
