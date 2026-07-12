@@ -1,3 +1,4 @@
+{% load static %}
 <nav class="sticky top-0 z-40 border-b border-dark-border bg-dark-bg/90 backdrop-blur-md"
     x-data="{ mobileOpen: false }">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -5,10 +6,7 @@
 
             <!-- Logo -->
             <a href="{% url 'landing' %}" class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-gold flex items-center justify-center shadow-gold">
-                    <i data-lucide="file-text" class="w-4 h-4 text-dark-bg"></i>
-                </div>
-                <span class="text-xl font-display font-bold text-white">CV<span class="text-gold">Craft</span></span>
+                <img src="{% static 'images/cvcraft-logo.png' %}" alt="CVCraft" class="h-9 w-auto">
             </a>
 
             <!-- Desktop Nav -->

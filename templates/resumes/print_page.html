@@ -94,6 +94,10 @@
             padding-bottom: 48px;
         }
 
+        .quaddev-credit {
+            display: none;
+        }
+
         /* When printing: hide bar, remove grey bg, remove padding */
         @media print {
             #print-bar {
@@ -107,6 +111,23 @@
             .resume-wrap {
                 padding: 0;
                 display: block;
+            }
+
+            .quaddev-credit {
+                display: block;
+                text-align: center;
+                font-family: 'Helvetica Neue', Arial, sans-serif;
+                font-size: 7.5pt;
+                color: #aaa;
+                padding: 6pt 0 4pt;
+                border-top: 0.5pt solid #e5e7eb;
+                margin: 6mm 20mm 0;
+                letter-spacing: 0.3px;
+            }
+
+            .quaddev-credit a {
+                color: #C9A84C;
+                text-decoration: none;
             }
 
             @page {
@@ -144,6 +165,9 @@
 
     <div class="resume-wrap">
         {{ resume_html|safe }}
+        <div class="quaddev-credit">
+            Created by <a href="https://quaddev.onrender.com">Quaddev</a> &bull; quaddev.onrender.com
+        </div>
     </div>
 
     <script>
