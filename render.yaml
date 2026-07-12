@@ -3,7 +3,7 @@ services:
     name: cvcraft
     runtime: python
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
-    startCommand: python manage.py migrate --noinput && python manage.py ensure_site && gunicorn cvcraft.wsgi --workers 2 --threads 2 --timeout 120
+    startCommand: python manage.py migrate --noinput && gunicorn cvcraft.wsgi --workers 2 --threads 2 --timeout 120
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: cvcraft.settings

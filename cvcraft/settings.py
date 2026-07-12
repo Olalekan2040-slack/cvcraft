@@ -22,12 +22,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.sites',
+    # django.contrib.sites removed — allauth uses RequestSite (no DB table needed)
 
     # Third-party
     'allauth',
     'allauth.account',
-    'allauth.socialaccount',
+    # allauth.socialaccount removed — no social/OAuth login configured
     'whitenoise.runserver_nostatic',
     'crispy_forms',
     'crispy_bootstrap5',
@@ -137,9 +137,6 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
-SITE_ID = 1
-SITE_DOMAIN = os.getenv('SITE_DOMAIN', 'cvcraft-7pv3.onrender.com')
-SITE_NAME = 'CVCraft'
 ACCOUNT_EMAIL_VERIFICATION = 'optional'
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_LOGIN_METHODS = {'email'}
