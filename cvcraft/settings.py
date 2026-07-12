@@ -138,6 +138,8 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 SITE_ID = 1
+SITE_DOMAIN = os.getenv('SITE_DOMAIN', 'cvcraft-7pv3.onrender.com')
+SITE_NAME = 'CVCraft'
 ACCOUNT_EMAIL_VERIFICATION = 'optional'
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_LOGIN_METHODS = {'email'}
