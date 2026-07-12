@@ -121,6 +121,28 @@
             font-size: 9pt;
             color: #c0c4cc;
             line-height: 1.6;
+            text-align: justify;
+        }
+
+        .project-desc {
+            font-size: 8.5pt;
+            color: #555;
+            margin-top: 3px;
+            line-height: 1.45;
+            text-align: justify;
+        }
+
+        .proj-link {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 7pt;
+            color: var(--accent);
+            text-decoration: none;
+            border: 1px solid var(--accent);
+            padding: 1px 5px;
+            border-radius: 3px;
+            margin-left: 4px;
+            white-space: nowrap;
         }
 
         /* ── Body ────────────────────────────────────────── */
@@ -543,10 +565,11 @@
                     {% if data.personal.website %}
                     <li><span>⌘</span><a href="{% if '://' in data.personal.website %}{{ data.personal.website }}{% else %}https://{{ data.personal.website }}{% endif %}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none">{{ data.personal.website }}</a></li>
                     {% endif %}
+                    {% if data.personal.linkedin %}
+                    <li><span>in</span><a href="{% if '://' in data.personal.linkedin %}{{ data.personal.linkedin }}{% else %}https://{{ data.personal.linkedin }}{% endif %}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none">{{ data.personal.linkedin }}</a></li>
+                    {% endif %}
                     {% if data.personal.github %}
-                    <li><span>⌥</span><a href="{% if '://' in data.personal.github %}{{ data.personal.github }}{% else %}https://{{ data.personal.github }}{% endif %}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none">{{ data.personal.github }}</a></li>
-                    {% elif data.personal.linkedin %}
-                    <li><span>⌥</span><a href="{% if '://' in data.personal.linkedin %}{{ data.personal.linkedin }}{% else %}https://{{ data.personal.linkedin }}{% endif %}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none">{{ data.personal.linkedin }}</a></li>
+                    <li><span>gh</span><a href="{% if '://' in data.personal.github %}{{ data.personal.github }}{% else %}https://{{ data.personal.github }}{% endif %}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none">{{ data.personal.github }}</a></li>
                     {% endif %}
                 </ul>
             </div>
@@ -589,8 +612,13 @@
                     {% for proj in data.projects %}
                     <div class="project-entry">
                         <div class="project-head">
-                            <span class="project-name">{% if proj.url %}<a href="{% if '://' in proj.url %}{{ proj.url }}{% else %}https://{{ proj.url }}{% endif %}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none">{{ proj.name }}</a>{% else %}{{ proj.name }}{% endif %}</span>
+                            <span class="project-name">{{ proj.name }}</span>
                             {% if proj.technologies %}<span class="project-tech">{{ proj.technologies }}</span>{% endif %}
+                            <span style="display:inline-flex;gap:3px;margin-left:4px;align-items:center">
+                                {% if proj.github_url %}<a href="{% if '://' in proj.github_url %}{{ proj.github_url }}{% else %}https://{{ proj.github_url }}{% endif %}" class="proj-link" target="_blank" rel="noopener noreferrer">gh</a>{% endif %}
+                                {% if proj.demo_url %}<a href="{% if '://' in proj.demo_url %}{{ proj.demo_url }}{% else %}https://{{ proj.demo_url }}{% endif %}" class="proj-link" target="_blank" rel="noopener noreferrer">demo</a>{% endif %}
+                                {% if proj.url and not proj.github_url and not proj.demo_url %}<a href="{% if '://' in proj.url %}{{ proj.url }}{% else %}https://{{ proj.url }}{% endif %}" class="proj-link" target="_blank" rel="noopener noreferrer">link</a>{% endif %}
+                            </span>
                         </div>
                         {% if proj.description %}<div class="project-desc">{{ proj.description }}</div>{% endif %}
                         {% if proj.bullets %}

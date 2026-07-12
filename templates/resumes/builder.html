@@ -446,8 +446,10 @@
                                     placeholder="Project Name">
                                 <input type="text" x-model="proj.technologies" @input="debouncedPreview()"
                                     class="form-input" placeholder="Technologies: React, Python, AWS">
-                                <input type="url" x-model="proj.url" @input="debouncedPreview()" class="form-input"
-                                    placeholder="https://github.com/...">
+                                <input type="url" x-model="proj.github_url" @input="debouncedPreview()" class="form-input"
+                                    placeholder="GitHub URL (https://github.com/...)">
+                                <input type="url" x-model="proj.demo_url" @input="debouncedPreview()" class="form-input"
+                                    placeholder="Live Demo URL (https://...)">
                                 <textarea x-model="proj.description" @input="debouncedPreview()" rows="3"
                                     class="form-input resize-none"
                                     placeholder="Describe what the project does and your impact..."></textarea>

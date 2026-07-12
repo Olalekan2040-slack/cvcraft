@@ -85,6 +85,7 @@
             line-height: 1.6;
             border-left: 3px solid var(--accent);
             padding-left: 14px;
+            text-align: justify;
         }
 
         /* Body */
@@ -153,6 +154,19 @@
             color: #444;
             margin-top: 5px;
             line-height: 1.5;
+            text-align: justify;
+        }
+
+        .proj-link {
+            display: inline-block;
+            font-size: 7.5pt;
+            color: var(--accent);
+            text-decoration: none;
+            border: 1px solid var(--accent);
+            padding: 0px 5px;
+            border-radius: 2px;
+            margin-left: 4px;
+            white-space: nowrap;
         }
 
         .bullets {
@@ -340,8 +354,8 @@
                     {% if data.personal.phone %}<div>{{ data.personal.phone }}</div>{% endif %}
                     {% if data.personal.location %}<div>{{ data.personal.location }}</div>{% endif %}
                     {% if data.personal.website %}<div><a href="{% if '://' in data.personal.website %}{{ data.personal.website }}{% else %}https://{{ data.personal.website }}{% endif %}" target="_blank" rel="noopener noreferrer">{{ data.personal.website }}</a></div>{% endif %}
-                    {% if data.personal.linkedin %}<div><a href="{% if '://' in data.personal.linkedin %}{{ data.personal.linkedin }}{% else %}https://{{ data.personal.linkedin }}{% endif %}" target="_blank" rel="noopener noreferrer">{{ data.personal.linkedin }}</a></div>{% endif %}
-                    {% if data.personal.github %}<div><a href="{% if '://' in data.personal.github %}{{ data.personal.github }}{% else %}https://{{ data.personal.github }}{% endif %}" target="_blank" rel="noopener noreferrer">{{ data.personal.github }}</a></div>{% endif %}
+                    {% if data.personal.linkedin %}<div><span style="font-size:8pt;font-weight:700;color:var(--accent);margin-right:2px">in</span><a href="{% if '://' in data.personal.linkedin %}{{ data.personal.linkedin }}{% else %}https://{{ data.personal.linkedin }}{% endif %}" target="_blank" rel="noopener noreferrer">{{ data.personal.linkedin }}</a></div>{% endif %}
+                    {% if data.personal.github %}<div><span style="font-size:8pt;font-weight:700;color:var(--accent);margin-right:2px">gh</span><a href="{% if '://' in data.personal.github %}{{ data.personal.github }}{% else %}https://{{ data.personal.github }}{% endif %}" target="_blank" rel="noopener noreferrer">{{ data.personal.github }}</a></div>{% endif %}
                 </div>
             </div>
             {% if data.personal.summary %}
@@ -408,10 +422,19 @@
                     <div class="entry">
                         <div class="entry-header">
                             <div class="entry-title">{{ proj.name }}</div>
-                            {% if proj.url %}<div class="entry-date" style="font-size:7.5pt"><a href="{% if '://' in proj.url %}{{ proj.url }}{% else %}https://{{ proj.url }}{% endif %}" target="_blank" rel="noopener noreferrer" style="color:inherit">{{ proj.url }}</a></div>{% endif %}
+                            <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
+                                {% if proj.github_url %}<a href="{% if '://' in proj.github_url %}{{ proj.github_url }}{% else %}https://{{ proj.github_url }}{% endif %}" class="proj-link" target="_blank" rel="noopener noreferrer">GitHub</a>{% endif %}
+                                {% if proj.demo_url %}<a href="{% if '://' in proj.demo_url %}{{ proj.demo_url }}{% else %}https://{{ proj.demo_url }}{% endif %}" class="proj-link" target="_blank" rel="noopener noreferrer">Live Demo</a>{% endif %}
+                                {% if proj.url and not proj.github_url and not proj.demo_url %}<a href="{% if '://' in proj.url %}{{ proj.url }}{% else %}https://{{ proj.url }}{% endif %}" class="proj-link" target="_blank" rel="noopener noreferrer">Link</a>{% endif %}
+                            </div>
                         </div>
                         {% if proj.technologies %}<div class="entry-subtitle">{{ proj.technologies }}</div>{% elif proj.tech_stack %}<div class="entry-subtitle">{{ proj.tech_stack }}</div>{% endif %}
                         {% if proj.description %}<div class="entry-description">{{ proj.description }}</div>{% endif %}
+                        {% if proj.bullets %}
+                        <ul class="bullets">
+                            {% for b in proj.bullets %}{% if b %}<li>{{ b }}</li>{% endif %}{% endfor %}
+                        </ul>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 </div>

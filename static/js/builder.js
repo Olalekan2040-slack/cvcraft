@@ -166,7 +166,7 @@ function builder() {
 
         addProject() {
             this.data.projects.push({
-                name: '', technologies: '', url: '', description: '', bullets: [], _open: true,
+                name: '', technologies: '', github_url: '', demo_url: '', url: '', description: '', bullets: [], _open: true,
             });
             this.$nextTick(() => { lucide.createIcons(); this.debouncedPreview(); });
         },

@@ -203,6 +203,8 @@ RESUME_DATA = {
             "name": "Preptutor – Learning Management System",
             "technologies": "Odoo, Python, XML, JavaScript, PostgreSQL",
             "url": "",
+            "github_url": "github.com/Olalekan2040-slack/preptutor",
+            "demo_url": "",
             "description": "Developed an Odoo-based e-learning and assessment platform that streamlines teaching and learning management processes.",
             "bullets": [
                 "Customized and extended Odoo modules for course creation, student enrollment, and instructor dashboards.",
@@ -217,6 +219,8 @@ RESUME_DATA = {
             "name": "ExamGenius – AI-Driven Exam Preparation Platform",
             "technologies": "FastAPI, React.js, PostgreSQL",
             "url": "",
+            "github_url": "github.com/Olalekan2040-slack/examgenius",
+            "demo_url": "examgenius.quaddev.com",
             "description": "Full-stack AI-driven exam preparation platform helping Nigerian students master JAMB entrance examinations through intelligent tutoring, adaptive practice, and real-time performance analytics.",
             "bullets": [
                 "Architected a FastAPI + PostgreSQL backend with JWT authentication, role-based access control, and a RESTful API serving 30+ endpoints across learning, CBT, analytics, and admin modules.",
@@ -231,7 +235,9 @@ RESUME_DATA = {
             "id": "proj3",
             "name": "Autojobserve – Automated Job Scraping Platform",
             "technologies": "FastAPI, Selenium, OAuth2, Pydocx",
-            "url": "https://github.com/Olalekan2040-slack",
+            "url": "",
+            "github_url": "github.com/Olalekan2040-slack/autojobserve",
+            "demo_url": "",
             "description": "Backend service for aggregating job postings from multiple job boards into a unified API.",
             "bullets": [
                 "Designed and built REST API endpoints using FastAPI for efficient job data retrieval and delivery.",
@@ -244,6 +250,8 @@ RESUME_DATA = {
             "name": "SmartCV – AI-Powered Resume Builder",
             "technologies": "FastAPI, React, PostgreSQL, Tailwind CSS, Docker",
             "url": "",
+            "github_url": "github.com/Olalekan2040-slack/smartcv",
+            "demo_url": "",
             "description": "Full-stack AI-powered CV builder that allows users to create professional resumes with intelligent content suggestions, real-time validation, and instant PDF generation.",
             "bullets": [
                 "Engineered a FastAPI backend integrated with GPT-based AI for smart resume content recommendations.",
