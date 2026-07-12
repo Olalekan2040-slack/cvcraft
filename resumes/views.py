@@ -782,15 +782,24 @@ def upload_cv(request):
     # Cap text length to avoid huge Gemini requests
     cv_text = cv_text[:8000]
 
-    # Call Gemini to parse
-    api_key = settings.GEMINI_API_KEY
-    if not api_key:
-        return JsonResponse({'error': 'AI service not configured.'}, status=503)
-
+    # Parse the CV — use Gemini if configured (better quality), else regex fallback
+    ai_used = False
     try:
-        parsed_data = _parse_cv_smart(cv_text)
-    except Exception as e:
-        return JsonResponse({'error': f'CV parsing failed: {str(e)}'}, status=500)
+        api_key = settings.GEMINI_API_KEY
+        if api_key:
+            raw = _gemini_generate(CV_PARSE_PROMPT.format(cv_text=cv_text))
+            raw = re.sub(r'^```(?:json)?\s*', '', raw.strip(), flags=re.MULTILINE)
+            raw = re.sub(r'\s*```$', '', raw.strip(), flags=re.MULTILINE)
+            parsed_data = json.loads(raw)
+            ai_used = True
+        else:
+            parsed_data = _parse_cv_smart(cv_text)
+    except Exception:
+        # Gemini failed or returned bad JSON — fall back to regex parser
+        try:
+            parsed_data = _parse_cv_smart(cv_text)
+        except Exception as e:
+            return JsonResponse({'error': f'CV parsing failed: {str(e)}'}, status=500)
 
     # Get chosen template and create resume
     template_slug = request.POST.get('template', 'modern')
@@ -812,6 +821,8 @@ def upload_cv(request):
         'resume_pk': resume.pk,
         'redirect_url': f'/dashboard/{resume.pk}/',
         'name': title,
+        'ai_used': ai_used,
+        'message': 'Parsed with AI — review and refine your details.' if ai_used else 'Parsed with basic extraction — please review and fill in any missing details.',
     })
 
 
