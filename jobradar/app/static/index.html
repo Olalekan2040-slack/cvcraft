@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JobRadar · N-TECH Info Systems</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface2: #273549;
+            --border: #334155;
+            --accent: #3b82f6;
+            --accent-h: #2563eb;
+            --ok: #22c55e;
+            --err: #ef4444;
+            --warn: #f59e0b;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --sw: 224px
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh
+        }
+
+        /* ── Login ── */
+        #login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: radial-gradient(ellipse at 30% 30%, #1e3a5f 0%, var(--bg) 60%)
+        }
+
+        .login-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px;
+            width: 400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .5)
+        }
+
+        .login-logo {
+            font-size: 2.5rem;
+            margin-bottom: 8px
+        }
+
+        .login-card h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 4px
+        }
+
+        .login-card .sub {
+            color: var(--muted);
+            font-size: 0.8rem;
+            margin-bottom: 28px
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 20px
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 7px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--muted);
+            transition: .15s
+        }
+
+        .tab.active {
+            background: var(--accent);
+            color: #fff
+        }
+
+        .fg {
+            margin-bottom: 14px
+        }
+
+        .fg label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-bottom: 5px
+        }
+
+        .fg input {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: var(--text);
+            font-size: .9rem;
+            outline: none;
+            transition: .15s
+        }
+
+        .fg input:focus {
+            border-color: var(--accent)
+        }
+
+        .auth-err {
+            color: #fca5a5;
+            font-size: .82rem;
+            margin-bottom: 10px;
+            display: none
+        }
+
+        /* ── Buttons ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 16px;
+            border-radius: 8px;
+            border: none;
+            font-size: .85rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: .15s;
+            text-decoration: none
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-h)
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: .78rem
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border)
+        }
+
+        .btn-ghost:hover {
+            color: var(--text);
+            background: var(--surface2)
+        }
+
+        .btn-success {
+            background: #14532d;
+            color: #86efac
+        }
+
+        .btn-full {
+            width: 100%;
+            justify-content: center
+        }
+
+        /* ── App shell ── */
+        #app {
+            display: none;
+            height: 100vh;
+            overflow: hidden
+        }
+
+        #app.show {
+            display: flex
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sw);
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0
+        }
+
+        .brand {
+            padding: 18px 16px 14px;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .brand-name {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--accent)
+        }
+
+        .brand-org {
+            font-size: .68rem;
+            color: var(--muted);
+            margin-top: 2px
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 10px 8px;
+            overflow-y: auto
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: .87rem;
+            color: var(--muted);
+            transition: .15s;
+            margin-bottom: 2px;
+            user-select: none
+        }
+
+        .nav-item:hover {
+            background: var(--surface2);
+            color: var(--text)
+        }
+
+        .nav-item.active {
+            background: var(--accent);
+            color: #fff
+        }
+
+        .nav-icon {
+            width: 20px;
+            text-align: center;
+            font-size: .95rem
+        }
+
+        .sidebar-foot {
+            padding: 12px;
+            border-top: 1px solid var(--border)
+        }
+
+        .user-row {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 8px
+        }
+
+        .avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .78rem;
+            font-weight: 700;
+            flex-shrink: 0
+        }
+
+        .uname {
+            font-size: .83rem;
+            font-weight: 600
+        }
+
+        .urole {
+            font-size: .68rem;
+            color: var(--muted)
+        }
+
+        /* Main */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden
+        }
+
+        .topbar {
+            padding: 14px 22px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--surface);
+            flex-shrink: 0
+        }
+
+        .topbar h2 {
+            font-size: 1rem;
+            font-weight: 600
+        }
+
+        .topbar-right {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 22px
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+            gap: 14px;
+            margin-bottom: 22px
+        }
+
+        .stat {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px 16px;
+            position: relative;
+            overflow: hidden
+        }
+
+        .stat::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent)
+        }
+
+        .stat.g::before {
+            background: var(--ok)
+        }
+
+        .stat.a::before {
+            background: var(--warn)
+        }
+
+        .stat.r::before {
+            background: var(--err)
+        }
+
+        .stat-val {
+            font-size: 1.9rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 5px
+        }
+
+        .stat-lbl {
+            font-size: .75rem;
+            color: var(--muted)
+        }
+
+        .stat-ico {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            font-size: 1.3rem;
+            opacity: .35
+        }
+
+        /* Section */
+        .sec-title {
+            font-size: .78rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: 10px
+        }
+
+        /* Table */
+        .tw {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 16px
+        }
+
+        .tb-bar {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse
+        }
+
+        th {
+            padding: 10px 14px;
+            text-align: left;
+            font-size: .72rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface2);
+            white-space: nowrap
+        }
+
+        td {
+            padding: 10px 14px;
+            font-size: .84rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle
+        }
+
+        tr:last-child td {
+            border-bottom: none
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, .02)
+        }
+
+        .search {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 7px 12px;
+            color: var(--text);
+            font-size: .83rem;
+            outline: none;
+            width: 210px
+        }
+
+        .search:focus {
+            border-color: var(--accent)
+        }
+
+        /* Badges */
+        .b {
+            display: inline-block;
+            padding: 2px 9px;
+            border-radius: 999px;
+            font-size: .72rem;
+            font-weight: 600;
+            white-space: nowrap
+        }
+
+        .b-sent {
+            background: #14532d;
+            color: #86efac
+        }
+
+        .b-failed {
+            background: #7f1d1d;
+            color: #fca5a5
+        }
+
+        .b-pending {
+            background: #713f12;
+            color: #fde68a
+        }
+
+        .b-on {
+            background: #1e3a5f;
+            color: #93c5fd
+        }
+
+        .b-off {
+            background: var(--surface2);
+            color: var(--muted)
+        }
+
+        .b-cat {
+            background: var(--surface2);
+            color: var(--accent);
+            border: 1px solid var(--border);
+            font-size: .7rem
+        }
+
+        /* Toast */
+        #toasts {
+            position: fixed;
+            top: 18px;
+            right: 18px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+
+        .toast {
+            padding: 11px 15px;
+            border-radius: 8px;
+            font-size: .83rem;
+            font-weight: 500;
+            animation: tin .3s ease;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, .4);
+            max-width: 300px
+        }
+
+        .t-ok {
+            background: #14532d;
+            color: #86efac;
+            border-left: 4px solid var(--ok)
+        }
+
+        .t-err {
+            background: #7f1d1d;
+            color: #fca5a5;
+            border-left: 4px solid var(--err)
+        }
+
+        .t-info {
+            background: #1e3a5f;
+            color: #93c5fd;
+            border-left: 4px solid var(--accent)
+        }
+
+        @keyframes tin {
+            from {
+                transform: translateX(110%);
+                opacity: 0
+            }
+
+            to {
+                transform: none;
+                opacity: 1
+            }
+        }
+
+        /* Modal */
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .75);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center
+        }
+
+        .overlay.open {
+            display: flex
+        }
+
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            width: 700px;
+            max-height: 82vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column
+        }
+
+        .modal-hd {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .modal-hd h3 {
+            font-size: .95rem;
+            font-weight: 600
+        }
+
+        .mclose {
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 4px
+        }
+
+        .mclose:hover {
+            color: var(--text)
+        }
+
+        .modal-bd {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+            font-size: .84rem;
+            line-height: 1.7
+        }
+
+        /* Scrape page */
+        .scrape-wrap {
+            max-width: 540px;
+            margin: 0 auto
+        }
+
+        .scrape-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 36px;
+            text-align: center;
+            margin-bottom: 20px
+        }
+
+        .scrape-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 8px
+        }
+
+        .scrape-card p {
+            color: var(--muted);
+            font-size: .88rem;
+            margin-bottom: 20px;
+            line-height: 1.6
+        }
+
+        #scrape-status {
+            padding: 12px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: .84rem;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 46px;
+            margin-top: 14px
+        }
+
+        .spin {
+            width: 15px;
+            height: 15px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: rot .7s linear infinite;
+            flex-shrink: 0
+        }
+
+        @keyframes rot {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        /* Steps list */
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+
+        .step {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 11px 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            font-size: .84rem
+        }
+
+        .step-num {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: #fff;
+            font-size: .72rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px
+        }
+
+        /* Toggle */
+        .toggle {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            position: absolute
+        }
+
+        .tog-sl {
+            width: 36px;
+            height: 20px;
+            background: var(--border);
+            border-radius: 999px;
+            transition: .2s;
+            position: relative;
+            flex-shrink: 0
+        }
+
+        .tog-sl::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border-radius: 50%;
+            transition: .2s
+        }
+
+        .toggle input:checked+.tog-sl {
+            background: var(--ok)
+        }
+
+        .toggle input:checked+.tog-sl::after {
+            transform: translateX(16px)
+        }
+
+        /* Empty */
+        .empty {
+            text-align: center;
+            padding: 48px;
+            color: var(--muted)
+        }
+
+        .empty .ei {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+            opacity: .4
+        }
+
+        /* Misc */
+        a.jl {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: .78rem
+        }
+
+        a.jl:hover {
+            text-decoration: underline
+        }
+
+        .trunc {
+            max-width: 180px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block
+        }
+
+        .tabs2 {
+            display: flex;
+            gap: 4px;
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 4px
+        }
+
+        .tp {
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: .83rem;
+            cursor: pointer;
+            color: var(--muted);
+            transition: .15s
+        }
+
+        .tp.act {
+            background: var(--accent);
+            color: #fff
+        }
+
+        .tp:hover:not(.act) {
+            color: var(--text);
+            background: var(--surface2)
+        }
+
+        .tpl-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 14px
+        }
+
+        .tpl-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px;
+            border-top: 3px solid var(--accent)
+        }
+
+        .inline-inp {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--border);
+            padding: 3px 4px;
+            width: 100%;
+            font-size: .83rem;
+            color: var(--text);
+            outline: none
+        }
+
+        .inline-inp:focus {
+            border-bottom-color: var(--accent)
+        }
+
+        .ir {
+            display: flex;
+            gap: 8px;
+            align-items: baseline;
+            margin-bottom: 5px;
+            font-size: .83rem
+        }
+
+        .ir .lbl {
+            color: var(--muted);
+            min-width: 80px;
+            font-size: .76rem
+        }
+
+        .prev-frame {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            font-size: .83rem;
+            line-height: 1.7;
+            max-height: 420px;
+            overflow-y: auto
+        }
+    </style>
+</head>
+
+<body>
+    <div id="toasts"></div>
+
+    <!-- Login -->
+    <div id="login-screen">
+        <div class="login-card">
+            <div class="login-logo">🎯</div>
+            <h1>JobRadar</h1>
+            <div class="sub">N-TECH Info Systems Ltd — Automated Job Outreach</div>
+            <div class="tabs">
+                <div class="tab active" id="tab-in" onclick="authMode('login')">Sign In</div>
+                <div class="tab" id="tab-reg" onclick="authMode('register')">Register</div>
+            </div>
+            <div class="fg"><label>Username</label><input id="au" placeholder="Username" /></div>
+            <div class="fg"><label>Password</label><input id="ap" type="password" placeholder="Password"
+                    onkeydown="if(event.key==='Enter')doAuth()" /></div>
+            <div class="auth-err" id="aerr"></div>
+            <button class="btn btn-primary btn-full" onclick="doAuth()" id="auth-btn">Sign In →</button>
+        </div>
+    </div>
+
+    <!-- Template modal -->
+    <div class="overlay" id="tpl-modal" onclick="if(event.target===this)closeMod()">
+        <div class="modal">
+            <div class="modal-hd">
+                <h3 id="mod-name">Template</h3>
+                <button class="mclose" onclick="closeMod()">✕</button>
+            </div>
+            <div class="modal-bd" id="mod-body"></div>
+        </div>
+    </div>
+
+    <!-- Change Password modal -->
+    <div class="overlay" id="chpw-modal" onclick="if(event.target===this)closeChPw()">
+        <div class="modal" style="width:420px;max-width:95vw">
+            <div class="modal-hd">
+                <h3>Change Password</h3>
+                <button class="mclose" onclick="closeChPw()">✕</button>
+            </div>
+            <div class="modal-bd">
+                <div class="fg" style="margin-bottom:14px">
+                    <label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px">Current
+                        Password</label>
+                    <input id="chpw-cur" type="password" placeholder="Current password"
+                        style="width:100%;box-sizing:border-box" />
+                </div>
+                <div class="fg" style="margin-bottom:14px">
+                    <label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px">New
+                        Password</label>
+                    <input id="chpw-new" type="password" placeholder="New password (min 8 chars)"
+                        style="width:100%;box-sizing:border-box" />
+                </div>
+                <div class="fg" style="margin-bottom:20px">
+                    <label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px">Confirm New
+                        Password</label>
+                    <input id="chpw-con" type="password" placeholder="Confirm new password"
+                        style="width:100%;box-sizing:border-box" />
+                </div>
+                <div id="chpw-err" style="color:#f87171;font-size:.8rem;margin-bottom:12px;display:none"></div>
+                <button class="btn btn-primary" style="width:100%" onclick="submitChPw()">Update Password</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- App -->
+    <div id="app">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-name">🎯 JobRadar</div>
+                <div class="brand-org">N-TECH Info Systems Ltd</div>
+            </div>
+            <nav class="sidebar-nav" id="nav">
+                <div class="nav-item active" data-p="dash" onclick="go('dash')"><span
+                        class="nav-icon">📊</span>Dashboard</div>
+                <div class="nav-item" data-p="jobs" onclick="go('jobs')"><span class="nav-icon">💼</span>Jobs Found
+                </div>
+                <div class="nav-item" data-p="apps" onclick="go('apps')"><span class="nav-icon">📨</span>Applications
+                </div>
+                <div class="nav-item" data-p="sources" onclick="go('sources')"><span class="nav-icon">🌐</span>Sources
+                </div>
+                <div class="nav-item" data-p="tpls" onclick="go('tpls')"><span class="nav-icon">📝</span>Templates</div>
+                <div class="nav-item" data-p="scrape" onclick="go('scrape')"><span class="nav-icon">▶️</span>Run Scrape
+                </div>
+                <div class="nav-item" data-p="logs" onclick="go('logs')"><span class="nav-icon">📋</span>Scrape Logs
+                </div>
+                <div class="nav-item" data-p="school" onclick="go('school')"><span class="nav-icon">🏫</span>School
+                    Outreach</div>
+            </nav>
+            <div class="sidebar-foot">
+                <div class="user-row">
+                    <div class="avatar" id="av">SQ</div>
+                    <div>
+                        <div class="uname" id="uname">Sharafdeen</div>
+                        <div class="urole">Operator</div>
+                    </div>
+                </div>
+                <button class="btn btn-ghost btn-full" style="margin-top:6px" onclick="openChPw()">🔑 Change
+                    Password</button>
+                <button class="btn btn-ghost btn-full" style="margin-top:6px" onclick="logout()">Sign Out</button>
+            </div>
+        </aside>
+
+        <main class="main">
+            <div class="topbar">
+                <h2 id="ptitle">Dashboard</h2>
+                <div class="topbar-right" id="tbar"></div>
+            </div>
+            <div class="content" id="pg">
+                <div class="empty">
+                    <div class="spin"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ── State ──────────────────────────────────────────────────────────────────
+        const S = {
+            token: localStorage.getItem('jr_tok'),
+            user: localStorage.getItem('jr_user') || '',
+            mode: 'login',
+        };
+
+        // ── API ────────────────────────────────────────────────────────────────────
+        async function api(path, opts = {}) {
+            const h = { 'Content-Type': 'application/json' };
+            if (S.token) h['Authorization'] = `Bearer ${S.token}`;
+            const r = await fetch(path, { headers: h, ...opts });
+            if (r.status === 401) { logout(); return null; }
+            if (!r.ok) {
+                const e = await r.json().catch(() => ({ detail: r.statusText }));
+                throw new Error(e.detail || r.statusText);
+            }
+            return r.json();
+        }
+
+        // ── Toast ──────────────────────────────────────────────────────────────────
+        function toast(msg, type = 'info') {
+            const el = document.createElement('div');
+            el.className = `toast t-${type}`;
+            el.textContent = msg;
+            document.getElementById('toasts').appendChild(el);
+            setTimeout(() => el.remove(), 4200);
+        }
+
+        // ── Auth ───────────────────────────────────────────────────────────────────
+        function authMode(m) {
+            S.mode = m;
+            document.getElementById('tab-in').classList.toggle('active', m === 'login');
+            document.getElementById('tab-reg').classList.toggle('active', m === 'register');
+            document.getElementById('auth-btn').textContent = m === 'login' ? 'Sign In →' : 'Register →';
+        }
+
+        async function doAuth() {
+            const u = document.getElementById('au').value.trim();
+            const p = document.getElementById('ap').value;
+            const err = document.getElementById('aerr');
+            err.style.display = 'none';
+            if (!u || !p) { err.textContent = 'Enter username and password.'; err.style.display = 'block'; return; }
+            try {
+                if (S.mode === 'register') {
+                    await api('/auth/register', { method: 'POST', body: JSON.stringify({ username: u, password: p }) });
+                    toast('Account created! Signing in…', 'ok');
+                    await new Promise(r => setTimeout(r, 600));
+                }
+                const form = new URLSearchParams({ username: u, password: p });
+                const r = await fetch('/auth/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: form });
+                if (!r.ok) throw new Error('Invalid credentials');
+                const d = await r.json();
+                S.token = d.access_token; S.user = u;
+                localStorage.setItem('jr_tok', d.access_token);
+                localStorage.setItem('jr_user', u);
+                showApp();
+            } catch (e) { err.textContent = e.message; err.style.display = 'block'; }
+        }
+
+        function logout() {
+            S.token = null;
+            localStorage.removeItem('jr_tok'); localStorage.removeItem('jr_user');
+            document.getElementById('app').classList.remove('show');
+            document.getElementById('login-screen').style.display = 'flex';
+        }
+
+        function showApp() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app').classList.add('show');
+            document.getElementById('av').textContent = S.user.slice(0, 2).toUpperCase();
+            document.getElementById('uname').textContent = S.user;
+            go('dash');
+        }
+
+        // ── Navigation ─────────────────────────────────────────────────────────────
+        const titles = { dash: 'Dashboard', jobs: 'Jobs Found', apps: 'My Applications', sources: 'Job Sources', tpls: 'Cover Letter Templates', scrape: 'Run Scrape', logs: 'Scrape Logs', school: 'School Outreach' };
+        function go(page) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.p === page));
+            document.getElementById('ptitle').textContent = titles[page] || page;
+            document.getElementById('tbar').innerHTML = '';
+            ({ dash: renderDash, jobs: renderJobs, apps: renderApps, sources: renderSources, tpls: renderTpls, scrape: renderScrape, logs: renderLogs, school: renderSchool })[page]?.();
+        }
+
+        function setPg(html) { document.getElementById('pg').innerHTML = html; }
+
+        // ── Dashboard ──────────────────────────────────────────────────────────────
+        async function renderDash() {
+            setPg('<div class="empty"><div class="spin"></div></div>');
+            const [s, apps] = await Promise.all([api('/stats/summary').catch(() => null), api('/applications/report').catch(() => [])]);
+            const st = s || {};
+            const rate = st.total_contacts > 0 ? Math.round((st.total_emails_sent / st.total_contacts) * 100) : 0;
+            const lastRun = st.last_scrape_at ? new Date(st.last_scrape_at).toLocaleString('en-NG') : 'Never';
+            const rows = (apps || []).slice(0, 8).map(a => `<tr>
+    <td><span class="trunc" title="${x(a.job_title)}">${x(a.job_title || '—')}</span></td>
+    <td>${x(a.company || '—')}</td>
+    <td><span class="trunc" title="${x(a.recipient_email)}">${x(a.recipient_email || '—')}</span></td>
+    <td><span class="b b-cat">${x(a.template_category || 'general')}</span></td>
+    <td><span class="b b-${a.status}">${a.status}</span></td>
+    <td style="color:var(--muted);font-size:.78rem">${fd(a.sent_at)}</td>
+  </tr>`).join('');
+            setPg(`
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-ico">💼</div><div class="stat-val">${st.total_jobs || 0}</div><div class="stat-lbl">Jobs Scraped</div></div>
+      <div class="stat g"><div class="stat-ico">📨</div><div class="stat-val">${st.total_emails_sent || 0}</div><div class="stat-lbl">Emails Sent</div></div>
+      <div class="stat a"><div class="stat-ico">🌐</div><div class="stat-val">${st.active_sources || 0}</div><div class="stat-lbl">Active Sources</div></div>
+      <div class="stat ${(st.total_emails_failed || 0) > 0 ? 'r' : 'g'}"><div class="stat-ico">⚡</div><div class="stat-val">${rate}%</div><div class="stat-lbl">Delivery Rate</div></div>
+      <div class="stat"><div class="stat-ico">👥</div><div class="stat-val">${st.total_contacts || 0}</div><div class="stat-lbl">Contacts Found</div></div>
+      <div class="stat r"><div class="stat-ico">❌</div><div class="stat-val">${st.total_emails_failed || 0}</div><div class="stat-lbl">Failed Sends</div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="sec-title" style="margin:0">Recent Applications</div>
+      <span style="font-size:.78rem;color:var(--muted)">Last scrape: ${lastRun}</span>
+    </div>
+    <div class="tw">${rows ? `<table><thead><tr><th>Job Title</th><th>Company</th><th>Sent To</th><th>Template</th><th>Status</th><th>Date</th></tr></thead><tbody>${rows}</tbody></table>`
+                    : '<div class="empty"><div class="ei">📭</div><p>No applications yet — trigger a scrape to start!</p></div>'}</div>
+  `);
+        }
+
+        // ── Jobs ───────────────────────────────────────────────────────────────────
+        async function renderJobs() {
+            setPg('<div class="empty"><div class="spin"></div></div>');
+            document.getElementById('tbar').innerHTML = `<input class="search" id="jsearch" placeholder="Search jobs…" oninput="filterJobs()" />`;
+            window._jobs = await api('/jobs?limit=300').catch(() => []) || [];
+            drawJobs(window._jobs);
+        }
+        function filterJobs() {
+            const q = document.getElementById('jsearch').value.toLowerCase();
+            drawJobs(window._jobs.filter(j => `${j.title}${j.company}${j.location}`.toLowerCase().includes(q)));
+        }
+        function drawJobs(list) {
+            const wrap = document.getElementById('jobs-tw');
+            const html = list.length ? `<div class="tw" id="jobs-tw"><table>
+    <thead><tr><th>Title</th><th>Company</th><th>Location</th><th>Emails</th><th>Link</th><th>Scraped</th></tr></thead>
+    <tbody>${list.map(j => `<tr>
+      <td><span class="trunc" title="${x(j.title)}">${x(j.title)}</span></td>
+      <td>${x(j.company || '—')}</td><td>${x(j.location || '—')}</td>
+      <td>${(j.raw_emails || []).length ? `<span style="color:var(--ok)">✓ ${j.raw_emails.length}</span>` : '<span style="color:var(--muted)">none</span>'}</td>
+      <td><a href="${x(j.url)}" target="_blank" class="jl">View →</a></td>
+      <td style="color:var(--muted);font-size:.76rem">${fd(j.scraped_at)}</td>
+    </tr>`).join('')}</tbody></table></div>`
+                : '<div class="empty"><div class="ei">🔍</div><p>No jobs match your search.</p></div>';
+            const pg = document.getElementById('pg');
+            const existing = document.getElementById('jobs-tw');
+            if (existing) existing.outerHTML = html; else pg.innerHTML = html;
+        }
+
+        // ── Applications ───────────────────────────────────────────────────────────
+        let _af = 'all';
+        async function renderApps() {
+            setPg('<div class="empty"><div class="spin"></div></div>');
+            document.getElementById('tbar').innerHTML = `<button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ Export CSV</button>`;
+            window._apps = await api('/applications/report').catch(() => []) || [];
+            const s = window._apps.filter(a => a.status === 'sent').length;
+            const f = window._apps.filter(a => a.status === 'failed').length;
+            setPg(`
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat"><div class="stat-val">${window._apps.length}</div><div class="stat-lbl">Total Applications</div></div>
+      <div class="stat g"><div class="stat-val">${s}</div><div class="stat-lbl">Delivered</div></div>
+      <div class="stat r"><div class="stat-val">${f}</div><div class="stat-lbl">Failed</div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="sec-title" style="margin:0">Application Log</div>
+      <div class="tabs2">
+        <div class="tp act" id="af-all" onclick="afilt('all')">All</div>
+        <div class="tp" id="af-sent" onclick="afilt('sent')">Sent</div>
+        <div class="tp" id="af-failed" onclick="afilt('failed')">Failed</div>
+      </div>
+    </div>
+    <div id="apps-list"></div>
+  `);
+            drawApps(window._apps);
+        }
+        function afilt(s) {
+            _af = s;
+            ['all', 'sent', 'failed'].forEach(k => document.getElementById('af-' + k)?.classList.toggle('act', k === s));
+            drawApps(s === 'all' ? window._apps : window._apps.filter(a => a.status === s));
+        }
+        function drawApps(list) {
+            const el = document.getElementById('apps-list');
+            if (!el) return;
+            el.innerHTML = list.length ? `<div class="tw"><table>
+    <thead><tr><th>Job Title</th><th>Company</th><th>Location</th><th>Email Sent To</th><th>Template</th><th>Status</th><th>Date</th><th>Note</th></tr></thead>
+    <tbody>${list.map(a => `<tr>
+      <td><span class="trunc" title="${x(a.job_title)}">${x(a.job_title || '—')}</span></td>
+      <td>${x(a.company || '—')}</td><td>${x(a.location || '—')}</td>
+      <td><span style="font-size:.78rem">${x(a.recipient_email || '—')}</span></td>
+      <td><span class="b b-cat">${x(a.template_category || 'general')}</span></td>
+      <td><span class="b b-${a.status}">${a.status}</span></td>
+      <td style="color:var(--muted);font-size:.76rem;white-space:nowrap">${fd(a.sent_at)}</td>
+      <td>${a.job_url ? `<a href="${x(a.job_url)}" target="_blank" class="jl">Job →</a>` : ''} ${a.error_message ? `<span style="color:var(--err);font-size:.74rem" title="${x(a.error_message)}">⚠ err</span>` : ''}</td>
+    </tr>`).join('')}</tbody></table></div>`
+                : '<div class="tw"><div class="empty"><div class="ei">📭</div><p>No applications in this view.</p></div></div>';
+        }
+        function exportCSV() {
+            const rows = [['Job Title', 'Company', 'Location', 'Email Sent To', 'Template', 'Status', 'Date', 'Error', 'Job URL']];
+            (window._apps || []).forEach(a => rows.push([a.job_title, a.company, a.location, a.recipient_email, a.template_category, a.status, a.sent_at, a.error_message || '', a.job_url || '']));
+            const csv = rows.map(r => r.map(v => `"${(v || '').toString().replace(/"/g, '""')}"`).join(',')).join('\n');
+            const b = new Blob([csv], { type: 'text/csv' });
+            const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(b), download: 'jobradar_applications.csv' });
+            a.click(); URL.revokeObjectURL(a.href);
+            toast('CSV downloaded!', 'ok');
+        }
+
+        // ── Sources ────────────────────────────────────────────────────────────────
+        async function renderSources() {
+            setPg('<div class="empty"><div class="spin"></div></div>');
+            const src = await api('/sources').catch(() => []) || [];
+            if (!src.length) { setPg('<div class="empty"><div class="ei">🌐</div><p>No sources configured.</p></div>'); return; }
+            const rows = src.map(s => `<tr>
+    <td><strong>${x(s.name)}</strong></td>
+    <td><a href="${x(s.url)}" target="_blank" class="jl">${x(s.url.replace(/https?:\/\//, '').split('/')[0])}</a></td>
+    <td><span class="b b-cat">${x(s.scraper_type)}</span></td>
+    <td style="font-size:.78rem;max-width:240px">${(s.keywords || []).slice(0, 4).map(k => `<span style="background:var(--surface2);padding:2px 7px;border-radius:4px;margin:2px;display:inline-block">${x(k)}</span>`).join('')}${(s.keywords || []).length > 4 ? `<span style="color:var(--muted)"> +${s.keywords.length - 4}</span>` : ''}</td>
+    <td><label class="toggle"><input type="checkbox" ${s.is_active ? 'checked' : ''} onchange="toggleSrc(${s.id},this.checked)"><span class="tog-sl"></span></label></td>
+    <td><span class="b ${s.is_active ? 'b-on' : 'b-off'}">${s.is_active ? 'Active' : 'Inactive'}</span></td>
+  </tr>`).join('');
+            setPg(`<div class="tw">
+    <div class="tb-bar"><span style="font-size:.88rem;font-weight:600">${src.length} Sources configured</span>
+    <span style="font-size:.78rem;color:var(--muted)">${src.filter(s => s.is_active).length} active · ${src.filter(s => !s.is_active).length} inactive</span></div>
+    <table><thead><tr><th>Name</th><th>Domain</th><th>Type</th><th>Keywords</th><th>Toggle</th><th>Status</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`);
+        }
+        async function toggleSrc(id, active) {
+            try {
+                await api(`/sources/${id}`, { method: 'PUT', body: JSON.stringify({ is_active: active }) });
+                toast(`Source ${active ? 'activated' : 'deactivated'}`, 'ok');
+                renderSources();
+            } catch (e) { toast('Failed: ' + e.message, 'err'); renderSources(); }
+        }
+
+        // ── Templates ──────────────────────────────────────────────────────────────
+        const CAT_COLORS = { backend_developer: '#1d4ed8', full_stack_developer: '#7c3aed', software_engineer: '#0891b2', tech_teacher: '#15803d', python_developer: '#b45309', data_analyst: '#be185d', odoo_developer: '#9a3412', general: '#475569' };
+        async function renderTpls() {
+            setPg('<div class="empty"><div class="spin"></div></div>');
+            window._tpls = await api('/templates').catch(() => []) || [];
+            if (!window._tpls.length) { setPg('<div class="empty"><div class="ei">📝</div><p>No templates found.</p></div>'); return; }
+            setPg(`<div class="tpl-grid">${window._tpls.map(t => `
+    <div class="tpl-card" style="border-top-color:${CAT_COLORS[t.category] || '#475569'}">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px">
+        <div>
+          <div style="font-weight:600;font-size:.92rem;margin-bottom:5px">${x(t.name)}</div>
+          <span class="b b-cat">${x(t.category || 'general')}</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="b ${t.is_active ? 'b-on' : 'b-off'}">${t.is_active ? 'Active' : 'Off'}</span>
+          <span style="font-size:.7rem;color:var(--muted)">v${t.version}</span>
+        </div>
+      </div>
+      <div class="ir"><span class="lbl">Subject:</span><span style="font-size:.8rem">${x(t.subject.replace(/\{\{/g, '[').replace(/\}\}/g, ']'))}</span></div>
+      <div class="ir"><span class="lbl">Variables:</span><span style="font-size:.74rem;color:var(--muted)">${(t.variables || []).join(', ')}</span></div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:11px" onclick="prevTpl(${t.id})">Preview Letter →</button>
+    </div>`).join('')}</div>`);
+        }
+        function prevTpl(id) {
+            const t = (window._tpls || []).find(t => t.id === id);
+            if (!t) return;
+            document.getElementById('mod-name').textContent = t.name;
+            document.getElementById('mod-body').innerHTML = `
+    <div class="ir"><span class="lbl">Category:</span><span class="b b-cat">${x(t.category)}</span></div>
+    <div class="ir" style="margin-bottom:14px"><span class="lbl">Subject:</span><em style="font-size:.83rem">${x(t.subject)}</em></div>
+    <div class="prev-frame">${t.html_body}</div>`;
+            document.getElementById('tpl-modal').classList.add('open');
+        }
+        function closeMod() { document.getElementById('tpl-modal').classList.remove('open'); }
+
+        // ── Change Password ────────────────────────────────────────────────────────
+        function openChPw() {
+            document.getElementById('chpw-cur').value = '';
+            document.getElementById('chpw-new').value = '';
+            document.getElementById('chpw-con').value = '';
+            const err = document.getElementById('chpw-err');
+            err.style.display = 'none';
+            document.getElementById('chpw-modal').classList.add('open');
+        }
+        function closeChPw() { document.getElementById('chpw-modal').classList.remove('open'); }
+        async function submitChPw() {
+            const cur = document.getElementById('chpw-cur').value;
+            const nw = document.getElementById('chpw-new').value;
+            const con = document.getElementById('chpw-con').value;
+            const err = document.getElementById('chpw-err');
+            err.style.display = 'none';
+            if (!cur || !nw || !con) { err.textContent = 'All fields are required.'; err.style.display = 'block'; return; }
+            if (nw.length < 8) { err.textContent = 'New password must be at least 8 characters.'; err.style.display = 'block'; return; }
+            if (nw !== con) { err.textContent = 'New passwords do not match.'; err.style.display = 'block'; return; }
+            try {
+                await api('/auth/change-password', { method: 'POST', body: JSON.stringify({ current_password: cur, new_password: nw }) });
+                closeChPw();
+                toast('Password updated successfully!', 'ok');
+            } catch (e) {
+                err.textContent = e.message || 'Failed to update password.';
+                err.style.display = 'block';
+            }
+        }
+
+        // ── Scrape ─────────────────────────────────────────────────────────────────
+        function renderScrape() {
+            setPg(`<div class="scrape-wrap">
+    <div class="scrape-card">
+      <div style="font-size:2.8rem;margin-bottom:14px">🚀</div>
+      <h3>Manual Scrape Trigger</h3>
+      <p>Scrapes all active Nigerian job boards, extracts recruiter emails, selects the right cover letter template per job category, attaches your CV, and sends personalised emails — all automatically.</p>
+      <p style="font-size:.78rem;color:var(--muted);margin-top:-12px">Runs automatically every <strong style="color:var(--text)">6 hours</strong> via the scheduler.</p>
+      <button class="btn btn-primary" id="sbtn" onclick="triggerScrape()" style="padding:13px 30px;font-size:.95rem">▶ Start Scrape Now</button>
+      <div id="scrape-status">Ready — click to trigger a full scrape cycle</div>
+    </div>
+    <div class="sec-title">What happens in a scrape cycle</div>
+    <div class="steps">${[
+                    ['🌐', 'Fetches all 6 active Nigerian job boards (Jobberman, MyJobMag, NgCareers, HotNigerianJobs, Indeed NG, TeachingNigeria)'],
+                    ['🔍', 'Filters listings against your configured keywords — including teaching roles'],
+                    ['📧', 'Extracts recruiter email addresses using regex across title, description & mailto links'],
+                    ['🏷️', 'Detects job category (backend_developer, tech_teacher, full_stack_developer…)'],
+                    ['📝', 'Selects the matching personalised cover letter template automatically'],
+                    ['📎', 'Attaches your CV — Sharafdeen Quadri.pdf — to every outbound email'],
+                    ['✉️', 'Sends via Gmail SMTP with retry logic and rate limiting (5s between sends)'],
+                    ['🔁', '30-day cooldown prevents duplicate outreach to the same recruiter'],
+                    ['📋', 'Every application is logged with status, timestamp, template used, and job details'],
+                ].map(([n, t], i) => `<div class="step"><div class="step-num">${i + 1}</div><div><span style="margin-right:6px">${n}</span>${t}</div></div>`).join('')}</div>
+  </div>`);
+        }
+        async function triggerScrape() {
+            const btn = document.getElementById('sbtn');
+            const st = document.getElementById('scrape-status');
+            btn.disabled = true; btn.textContent = 'Starting…';
+            st.innerHTML = '<div class="spin"></div> Scrape started in background…';
+            try {
+                await api('/scrape/run', { method: 'POST' });
+                st.innerHTML = '✅ Scrape triggered! Check Applications and Scrape Logs for results.';
+                st.style.color = 'var(--ok)';
+                toast('Scrape started successfully!', 'ok');
+            } catch (e) {
+                st.innerHTML = `❌ ${x(e.message)}`;
+                st.style.color = 'var(--err)';
+                toast('Scrape error: ' + e.message, 'err');
+            } finally { btn.disabled = false; btn.textContent = '▶ Start Scrape Now'; }
+        }
+
+        // ── Scrape Logs ────────────────────────────────────────────────────────────
+        async function renderLogs() {
+            setPg('<div class="empty"><div class="spin"></div></div>');
+            const logs = await api('/scrape/logs?limit=50').catch(() => []) || [];
+            if (!logs.length) { setPg('<div class="empty"><div class="ei">📋</div><p>No scrape runs yet. Trigger one from Run Scrape.</p></div>'); return; }
+            setPg(`<div class="tw"><table>
+    <thead><tr><th>Started</th><th>Ended</th><th>Sources</th><th>Listings Found</th><th>Emails Found</th><th>Result</th></tr></thead>
+    <tbody>${logs.map(l => `<tr>
+      <td style="font-size:.78rem">${fd(l.started_at)}</td>
+      <td style="font-size:.78rem">${l.ended_at ? fd(l.ended_at) : '<span style="color:var(--muted)">Running…</span>'}</td>
+      <td>${l.sources_run}</td>
+      <td style="color:var(--ok)">${l.listings_found}</td>
+      <td style="color:var(--accent)">${l.emails_found}</td>
+      <td>${l.errors?.length ? `<span style="color:var(--err)" title="${x((l.errors || []).join('; '))}">⚠ ${l.errors.length} error${l.errors.length > 1 ? 's' : ''}</span>` : '<span style="color:var(--ok)">✓ Clean</span>'}</td>
+    </tr>`).join('')}</tbody></table></div>`);
+        }
+
+        // ── School Outreach ────────────────────────────────────────────────────────
+        const DEFAULT_SCHOOL_LIST = [
+            { school_name: "Day Stars Private Schools", location: "Osogbo, Osun", email: "info@daystarsprivateschools.org" },
+            { school_name: "Exceeding Grace Academy", location: "Osogbo, Osun", email: "exceedinggraceacad@gmail.com" },
+            { school_name: "Al-Medinah International College", location: "Osogbo, Osun", email: "info@al-medinahinternationalcollege.com" },
+            { school_name: "Ebunoluwa International School", location: "Osogbo, Osun", email: "ebunoluwaintsch@gmail.com" },
+            { school_name: "Good Tidings Schools", location: "Osogbo, Osun", email: "goodtidingsedu@gmail.com" },
+            { school_name: "Destiny International College", location: "Osogbo, Osun", email: "info@destinyinternationalcollege.org" },
+            { school_name: "Kunike International School", location: "Osogbo, Osun", email: "info@kunike.sch.ng" },
+            { school_name: "Adventist High School", location: "Osogbo, Osun", email: "admin@ahsosogboportal.com" },
+            { school_name: "LBIS Osogbo Campus", location: "Osogbo, Osun", email: "info@lbis.org" },
+            { school_name: "Preston International School", location: "Akure, Ondo", email: "office@preston-international.com" },
+            { school_name: "Model Secondary School", location: "Akure, Ondo", email: "info@modelsecondaryschool.com" },
+            { school_name: "Watersprings International School", location: "Akure, Ondo", email: "info@waterspringsschool.com.ng" },
+            { school_name: "Seaba Model Christian College", location: "Akure, Ondo", email: "info@myseabacollege.org" },
+            { school_name: "Impact High School Akure", location: "Akure, Ondo", email: "info@impactschools.org.ng" },
+            { school_name: "Christ the Redeemer's Int'l Secondary School", location: "Akure, Ondo", email: "crissakure@gmail.com" },
+            { school_name: "Homaj High School", location: "Akure, Ondo", email: "info.homajhighschool@gmail.com" },
+        ];
+        let schoolList = JSON.parse(JSON.stringify(DEFAULT_SCHOOL_LIST));
+
+        function renderSchool() {
+            setPg(`<div style="max-width:860px">
+    <div class="scrape-card" style="text-align:left;padding:18px 20px;margin-bottom:14px">
+      <p style="margin:0;font-size:.88rem;color:var(--muted);line-height:1.6">Send your <strong style="color:var(--text)">Tech / AI Instructor</strong> cover letter directly to Nigerian private school email addresses. This is <em>independent</em> from the general job-scraping cycle. A 30-day cooldown prevents duplicate sends per email.</p>
+    </div>
+    <div class="tw" style="margin-bottom:12px">
+      <table>
+        <thead><tr><th style="width:26px">#</th><th>School Name</th><th style="width:150px">Location</th><th>Email Address</th><th style="width:34px"></th></tr></thead>
+        <tbody id="school-tbody">${buildSchoolRows()}</tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+      <button class="btn" onclick="addSchoolRow()">+ Add School</button>
+      <button class="btn btn-primary" id="sapply-btn" onclick="applyToSchools()">📨 Apply to All (${schoolList.length})</button>
+      <button class="btn btn-ghost" onclick="schoolList=JSON.parse(JSON.stringify(DEFAULT_SCHOOL_LIST));renderSchool()" title="Restore default list">↺ Reset</button>
+    </div>
+    <div id="school-status" style="display:none;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:.84rem;align-items:center;gap:8px"></div>
+    <div id="school-results" style="margin-top:12px"></div>
+  </div>`);
+        }
+
+        function buildSchoolRows() {
+            return schoolList.map((s, i) => `<tr id="sr-${i}">
+    <td style="color:var(--muted);font-size:.78rem">${i + 1}</td>
+    <td><input class="inline-inp" value="${x(s.school_name)}" onchange="schoolList[${i}].school_name=this.value" placeholder="School name" /></td>
+    <td><input class="inline-inp" value="${x(s.location)}" onchange="schoolList[${i}].location=this.value" placeholder="City, State" /></td>
+    <td><input class="inline-inp" value="${x(s.email)}" onchange="schoolList[${i}].email=this.value" placeholder="email@school.com" /></td>
+    <td><button onclick="removeSchoolRow(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem">✕</button></td>
+  </tr>`).join('');
+        }
+
+        function addSchoolRow() {
+            const i = schoolList.length;
+            schoolList.push({ school_name: '', location: 'Nigeria', email: '' });
+            const tb = document.getElementById('school-tbody');
+            if (!tb) { renderSchool(); return; }
+            const tr = document.createElement('tr');
+            tr.id = `sr-${i}`;
+            tr.innerHTML = `
+    <td style="color:var(--muted);font-size:.78rem">${i + 1}</td>
+    <td><input class="inline-inp" placeholder="School name" onchange="schoolList[${i}].school_name=this.value" /></td>
+    <td><input class="inline-inp" placeholder="City, State" value="Nigeria" onchange="schoolList[${i}].location=this.value" /></td>
+    <td><input class="inline-inp" placeholder="email@school.com" onchange="schoolList[${i}].email=this.value" /></td>
+    <td><button onclick="removeSchoolRow(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem">✕</button></td>`;
+            tb.appendChild(tr);
+            const btn = document.getElementById('sapply-btn');
+            if (btn) btn.textContent = `📨 Apply to All (${schoolList.length})`;
+        }
+
+        function removeSchoolRow(i) {
+            schoolList.splice(i, 1);
+            renderSchool();
+        }
+
+        async function applyToSchools() {
+            const valid = schoolList.filter(s => s.email.trim() && s.school_name.trim());
+            if (!valid.length) { toast('Add at least one school with a name and email', 'err'); return; }
+            const btn = document.getElementById('sapply-btn');
+            const statusEl = document.getElementById('school-status');
+            btn.disabled = true;
+            btn.textContent = '⏳ Sending…';
+            statusEl.style.display = 'flex';
+            statusEl.innerHTML = '<div class="spin"></div>&nbsp;Sending applications — 5 s delay between each send…';
+            statusEl.style.color = 'var(--muted)';
+            document.getElementById('school-results').innerHTML = '';
+            try {
+                const res = await api('/schools/apply', { method: 'POST', body: JSON.stringify({ contacts: valid }) });
+                statusEl.innerHTML = `✅ Done — <strong>${res.sent}</strong> sent · <strong>${res.skipped}</strong> skipped (cooldown) · <strong>${res.failed}</strong> failed`;
+                statusEl.style.color = res.failed > 0 ? 'var(--warn)' : 'var(--ok)';
+                const rows = (res.results || []).map(r =>
+                    `<tr><td style="font-size:.82rem">${x(r.email)}</td><td><span class="b b-${r.status === 'sent' ? 'sent' : r.status === 'skipped' ? 'pending' : 'failed'}">${r.status}</span></td><td style="color:var(--muted);font-size:.78rem">${x(r.reason || '')}</td></tr>`
+                ).join('');
+                document.getElementById('school-results').innerHTML = `<div class="tw"><table>
+      <thead><tr><th>Email</th><th>Status</th><th>Note</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+                toast(`School outreach complete: ${res.sent} sent`, res.failed > 0 ? 'info' : 'ok');
+            } catch (e) {
+                statusEl.innerHTML = `❌ ${x(e.message)}`;
+                statusEl.style.color = 'var(--err)';
+                toast('Error: ' + e.message, 'err');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = `📨 Apply to All (${valid.length})`;
+            }
+        }
+
+        // ── Utils ──────────────────────────────────────────────────────────────────
+        function x(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+        function fd(iso) { return iso ? new Date(iso).toLocaleString('en-NG', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'; }
+
+        // ── Boot ───────────────────────────────────────────────────────────────────
+        if (S.token) showApp();
+    </script>
+</body>
+
+</html>

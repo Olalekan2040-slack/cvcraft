@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JobRadar — Dashboard</title>
+    <style>
+        :root {
+            --bg: #0f1117;
+            --card: #1a1d27;
+            --border: #2a2d3e;
+            --accent: #6c63ff;
+            --accent2: #00d4aa;
+            --text: #e2e8f0;
+            --muted: #8892a4;
+            --red: #ff5f6d;
+            --yellow: #ffc857;
+            --green: #00d4aa
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
+            min-height: 100vh
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none
+        }
+
+        /* Sidebar */
+        .layout {
+            display: flex;
+            min-height: 100vh
+        }
+
+        .sidebar {
+            width: 220px;
+            background: var(--card);
+            border-right: 1px solid var(--border);
+            padding: 24px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: fixed;
+            height: 100vh;
+            z-index: 100
+        }
+
+        .sidebar .logo {
+            padding: 0 20px 24px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 8px
+        }
+
+        .sidebar .logo span {
+            color: var(--accent2)
+        }
+
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            border-radius: 0;
+            color: var(--muted);
+            font-size: 14px;
+            transition: all .2s;
+            cursor: pointer
+        }
+
+        .sidebar a:hover,
+        .sidebar a.active {
+            background: rgba(108, 99, 255, .15);
+            color: var(--text);
+            border-left: 3px solid var(--accent)
+        }
+
+        .sidebar a:not(.active) {
+            border-left: 3px solid transparent
+        }
+
+        .main {
+            margin-left: 220px;
+            flex: 1;
+            padding: 32px
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700
+        }
+
+        .header .badge {
+            background: var(--accent);
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px
+        }
+
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 32px
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px
+        }
+
+        .stat-card .label {
+            font-size: 12px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-bottom: 8px
+        }
+
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: 700
+        }
+
+        .stat-card .value.green {
+            color: var(--green)
+        }
+
+        .stat-card .value.yellow {
+            color: var(--yellow)
+        }
+
+        .stat-card .value.red {
+            color: var(--red)
+        }
+
+        .stat-card .value.accent {
+            color: var(--accent)
+        }
+
+        /* Table */
+        .section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 24px
+        }
+
+        .section-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center
+        }
+
+        .section-header h2 {
+            font-size: 15px;
+            font-weight: 600
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px
+        }
+
+        th {
+            padding: 10px 16px;
+            text-align: left;
+            color: var(--muted);
+            font-weight: 500;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255, 255, 255, .02)
+        }
+
+        td {
+            padding: 10px 16px;
+            border-bottom: 1px solid rgba(42, 45, 62, .6);
+            vertical-align: middle
+        }
+
+        tr:last-child td {
+            border-bottom: none
+        }
+
+        tr:hover td {
+            background: rgba(108, 99, 255, .05)
+        }
+
+        /* Badges */
+        .badge-green {
+            background: rgba(0, 212, 170, .15);
+            color: var(--green);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px
+        }
+
+        .badge-red {
+            background: rgba(255, 95, 109, .15);
+            color: var(--red);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px
+        }
+
+        .badge-yellow {
+            background: rgba(255, 200, 87, .15);
+            color: var(--yellow);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px
+        }
+
+        .badge-accent {
+            background: rgba(108, 99, 255, .2);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all .2s
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff
+        }
+
+        .btn-primary:hover {
+            background: #574fd6
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent)
+        }
+
+        .btn-outline:hover {
+            background: rgba(108, 99, 255, .1)
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: var(--red);
+            border: 1px solid var(--red);
+            font-size: 12px;
+            padding: 5px 10px
+        }
+
+        /* Login */
+        .login-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: var(--bg)
+        }
+
+        .login-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px;
+            width: 360px
+        }
+
+        .login-card h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            text-align: center
+        }
+
+        .login-card p {
+            color: var(--muted);
+            font-size: 13px;
+            text-align: center;
+            margin-bottom: 28px
+        }
+
+        .form-group {
+            margin-bottom: 16px
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: .5px
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, .05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+            transition: border-color .2s
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            border-color: var(--accent)
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+            font-family: monospace;
+            font-size: 12px
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px
+        }
+
+        .tab {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            background: transparent;
+            transition: all .2s
+        }
+
+        .tab.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent)
+        }
+
+        /* Toast */
+        #toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            z-index: 999;
+            display: none;
+            max-width: 300px
+        }
+
+        #toast.success {
+            background: #00d4aa;
+            color: #0f1117
+        }
+
+        #toast.error {
+            background: #ff5f6d;
+            color: #fff
+        }
+
+        /* Spinner */
+        .spin {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, .3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        /* Loading overlay */
+        .loading {
+            opacity: .5;
+            pointer-events: none
+        }
+
+        /* Empty */
+        .empty {
+            text-align: center;
+            padding: 48px;
+            color: var(--muted)
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .6);
+            z-index: 200;
+            align-items: center;
+            justify-content: center
+        }
+
+        .modal-backdrop.open {
+            display: flex
+        }
+
+        .modal {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            width: 520px;
+            max-width: 90vw;
+            max-height: 85vh;
+            overflow-y: auto
+        }
+
+        .modal h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px
+        }
+
+        .modal-close {
+            float: right;
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 20px;
+            cursor: pointer;
+            margin-top: -4px
+        }
+
+        /* Responsive */
+        @media(max-width:768px) {
+            .stats {
+                grid-template-columns: repeat(2, 1fr)
+            }
+
+            .sidebar {
+                width: 60px
+            }
+
+            .sidebar .logo,
+            .sidebar a span {
+                display: none
+            }
+
+            .main {
+                margin-left: 60px
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="login-wrap">
+        <div class="login-card">
+            <h2>🎯 JobRadar</h2>
+            <p>N-TECH Info Systems Ltd — Sign in to continue</p>
+            <div class="form-group">
+                <label>Username</label>
+                <input id="login-user" type="text" placeholder="admin" autocomplete="username" />
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password" />
+            </div>
+            <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="doLogin()">Sign In</button>
+            <div id="login-err" style="color:var(--red);font-size:12px;margin-top:12px;text-align:center"></div>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="app" style="display:none">
+        <div class="layout">
+            <!-- Sidebar -->
+            <nav class="sidebar">
+                <div class="logo">Job<span>Radar</span></div>
+                <a onclick="showTab('dashboard')" id="nav-dashboard"
+                    class="active"><span>📊</span><span>Dashboard</span></a>
+                <a onclick="showTab('jobs')" id="nav-jobs"><span>💼</span><span>Jobs Found</span></a>
+                <a onclick="showTab('sources')" id="nav-sources"><span>🌐</span><span>Job Sources</span></a>
+                <a onclick="showTab('templates')" id="nav-templates"><span>✉️</span><span>Cover Letters</span></a>
+                <a onclick="showTab('emails')" id="nav-emails"><span>📤</span><span>Applications</span></a>
+                <a onclick="showTab('logs')" id="nav-logs"><span>📋</span><span>Scrape Logs</span></a>
+                <a onclick="showTab('report')" id="nav-report"><span>📄</span><span>Reports</span></a>
+                <div style="margin-top:auto;padding:20px">
+                    <button class="btn btn-outline" style="width:100%;font-size:12px" onclick="triggerScrape()">▶ Run
+                        Now</button>
+                    <button class="btn btn-danger" style="width:100%;margin-top:8px" onclick="logout()">Logout</button>
+                </div>
+            </nav>
+
+            <!-- Main -->
+            <main class="main">
+
+                <!-- DASHBOARD -->
+                <div id="tab-dashboard">
+                    <div class="header">
+                        <div>
+                            <h1>Dashboard</h1>
+                            <div style="color:var(--muted);font-size:13px;margin-top:4px">Sharafdeen Quadri O. · N-TECH
+                                Info Systems Ltd</div>
+                        </div>
+                        <div>
+                            <span class="badge" id="scheduler-badge">⏱ Auto-apply: Every 6h</span>
+                        </div>
+                    </div>
+                    <div class="stats" id="stat-cards">
+                        <div class="stat-card">
+                            <div class="label">Jobs Scraped</div>
+                            <div class="value accent" id="s-jobs">—</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Applications Sent</div>
+                            <div class="value green" id="s-sent">—</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Failed</div>
+                            <div class="value red" id="s-failed">—</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Active Sources</div>
+                            <div class="value yellow" id="s-sources">—</div>
+                        </div>
+                    </div>
+                    <div class="section">
+                        <div class="section-header">
+                            <h2>Recent Applications</h2><button class="btn btn-outline" onclick="showTab('emails')">View
+                                All</button>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>To</th>
+                                    <th>Job Title</th>
+                                    <th>Company</th>
+                                    <th>Template</th>
+                                    <th>Status</th>
+                                    <th>Sent At</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-emails"></tbody>
+                        </table>
+                    </div>
+                    <div class="section">
+                        <div class="section-header">
+                            <h2>Latest Scrape Runs</h2><button class="btn btn-outline" onclick="showTab('logs')">View
+                                All</button>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Started</th>
+                                    <th>Sources</th>
+                                    <th>Jobs Found</th>
+                                    <th>Emails Found</th>
+                                    <th>Errors</th>
+                                    <th>Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-logs"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- JOBS -->
+                <div id="tab-jobs" style="display:none">
+                    <div class="header">
+                        <h1>Jobs Found</h1>
+                        <div style="display:flex;gap:8px">
+                            <input id="job-search" placeholder="Search title..."
+                                style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:200px"
+                                oninput="loadJobs()" />
+                        </div>
+                    </div>
+                    <div class="section">
+                        <div class="section-header">
+                            <h2>Scraped Listings</h2><span id="job-count"
+                                style="color:var(--muted);font-size:13px"></span>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Company</th>
+                                    <th>Location</th>
+                                    <th>Emails</th>
+                                    <th>Source</th>
+                                    <th>Scraped</th>
+                                    <th>Link</th>
+                                </tr>
+                            </thead>
+                            <tbody id="jobs-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SOURCES -->
+                <div id="tab-sources" style="display:none">
+                    <div class="header">
+                        <h1>Job Sources</h1>
+                        <button class="btn btn-primary" onclick="openAddSource()">+ Add Source</button>
+                    </div>
+                    <div class="section">
+                        <div class="section-header">
+                            <h2>Configured Boards</h2>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>URL</th>
+                                    <th>Type</th>
+                                    <th>Keywords</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sources-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TEMPLATES -->
+                <div id="tab-templates" style="display:none">
+                    <div class="header">
+                        <h1>Cover Letter Templates</h1>
+                        <button class="btn btn-primary" onclick="openAddTemplate()">+ New Template</button>
+                    </div>
+                    <div class="section">
+                        <div class="section-header">
+                            <h2>Category-Specific Letters</h2>
+                            <span style="color:var(--muted);font-size:12px">Auto-selected per job title</span>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Subject</th>
+                                    <th>Version</th>
+                                    <th>Active</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="templates-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- EMAILS -->
+                <div id="tab-emails" style="display:none">
+                    <div class="header">
+                        <h1>Applications Sent</h1>
+                    </div>
+                    <div class="tabs">
+                        <div class="tab active" onclick="filterEmails('all',this)">All</div>
+                        <div class="tab" onclick="filterEmails('sent',this)">Sent ✓</div>
+                        <div class="tab" onclick="filterEmails('failed',this)">Failed ✗</div>
+                        <div class="tab" onclick="filterEmails('pending',this)">Pending</div>
+                    </div>
+                    <div class="section">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Recipient</th>
+                                    <th>Job</th>
+                                    <th>Company</th>
+                                    <th>Template Used</th>
+                                    <th>Status</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="emails-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- LOGS -->
+                <div id="tab-logs" style="display:none">
+                    <div class="header">
+                        <h1>Scrape Run Logs</h1>
+                    </div>
+                    <div class="section">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Started</th>
+                                    <th>Ended</th>
+                                    <th>Sources</th>
+                                    <th>Jobs</th>
+                                    <th>Emails</th>
+                                    <th>Errors</th>
+                                    <th>Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- REPORT -->
+                <div id="tab-report" style="display:none">
+                    <div class="header">
+                        <h1>Application Report</h1>
+                        <button class="btn btn-primary" onclick="downloadReport()">⬇ Download JSON</button>
+                    </div>
+                    <div class="section">
+                        <div class="section-header">
+                            <h2>Summary</h2>
+                        </div>
+                        <div id="report-content" style="padding:20px;font-size:14px;line-height:2"></div>
+                    </div>
+                    <div class="section" style="margin-top:16px">
+                        <div class="section-header">
+                            <h2>All Applications Documentation</h2>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Job Title</th>
+                                    <th>Company</th>
+                                    <th>Location</th>
+                                    <th>Recipient Email</th>
+                                    <th>Cover Letter</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="report-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- ADD SOURCE MODAL -->
+    <div id="modal-source" class="modal-backdrop">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('modal-source')">×</button>
+            <h3>Add Job Source</h3>
+            <div class="form-group"><label>Name</label><input id="src-name" placeholder="e.g. Jobberman" /></div>
+            <div class="form-group"><label>URL</label><input id="src-url" placeholder="https://..." /></div>
+            <div class="form-group"><label>Type</label>
+                <select id="src-type">
+                    <option value="bs4">HTML / BeautifulSoup</option>
+                    <option value="json_api">JSON API</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Keywords (comma-separated)</label><input id="src-keywords"
+                    placeholder="Python Developer, FastAPI, Backend" /></div>
+            <button class="btn btn-primary" style="margin-top:8px" onclick="saveSource()">Save Source</button>
+        </div>
+    </div>
+
+    <!-- ADD TEMPLATE MODAL -->
+    <div id="modal-template" class="modal-backdrop">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('modal-template')">×</button>
+            <h3>New Cover Letter Template</h3>
+            <div class="form-group"><label>Name</label><input id="tpl-name"
+                    placeholder="Backend Developer Cover Letter" /></div>
+            <div class="form-group"><label>Category</label>
+                <select id="tpl-category">
+                    <option value="backend_developer">Backend Developer</option>
+                    <option value="full_stack_developer">Full-Stack Developer</option>
+                    <option value="software_engineer">Software Engineer</option>
+                    <option value="tech_teacher">ICT / Tech Teacher</option>
+                    <option value="python_developer">Python Developer</option>
+                    <option value="data_analyst">Data Analyst</option>
+                    <option value="odoo_developer">Odoo Developer</option>
+                    <option value="general">General / Fallback</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Subject</label><input id="tpl-subject"
+                    placeholder="Application for {{job_title}} at {{company}}" /></div>
+            <div class="form-group"><label>HTML Body</label><textarea id="tpl-html" rows="8"
+                    placeholder="<p>Dear Hiring Manager...</p>"></textarea></div>
+            <div class="form-group"><label>Plain Text Body</label><textarea id="tpl-text" rows="4"
+                    placeholder="Dear Hiring Manager..."></textarea></div>
+            <button class="btn btn-primary" style="margin-top:8px" onclick="saveTemplate()">Save Template</button>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast"></div>
+
+    <script>
+        const API = '';   // same origin
+        let TOKEN = localStorage.getItem('jr_token') || '';
+        let emailFilter = 'all';
+
+        // ── Auth ────────────────────────────────────────────────────────────────────
+        async function doLogin() {
+            const u = document.getElementById('login-user').value;
+            const p = document.getElementById('login-pass').value;
+            const fd = new FormData(); fd.append('username', u); fd.append('password', p);
+            const r = await fetch('/auth/token', { method: 'POST', body: fd });
+            if (r.ok) {
+                const d = await r.json();
+                TOKEN = d.access_token;
+                localStorage.setItem('jr_token', TOKEN);
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                loadDashboard();
+            } else {
+                document.getElementById('login-err').textContent = 'Invalid credentials';
+            }
+        }
+        function logout() { localStorage.removeItem('jr_token'); location.reload(); }
+        if (TOKEN) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            loadDashboard();
+        }
+        document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+        // ── API helper ───────────────────────────────────────────────────────────────
+        async function api(path, { method = 'GET', body } = {}) {
+            const opts = { method, headers: { Authorization: 'Bearer ' + TOKEN } };
+            if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+            const r = await fetch(API + path, opts);
+            if (r.status === 401) { logout(); return null; }
+            if (!r.ok) { const t = await r.text(); toast(t || 'Error', 'error'); return null; }
+            if (r.status === 204) return {};
+            return r.json();
+        }
+
+        // ── Toast ────────────────────────────────────────────────────────────────────
+        function toast(msg, type = 'success') {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.className = type; t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 3500);
+        }
+
+        // ── Tabs ─────────────────────────────────────────────────────────────────────
+        function showTab(name) {
+            document.querySelectorAll('[id^="tab-"]').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.sidebar a').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + name).style.display = 'block';
+            document.getElementById('nav-' + name).classList.add('active');
+            if (name === 'dashboard') loadDashboard();
+            else if (name === 'jobs') loadJobs();
+            else if (name === 'sources') loadSources();
+            else if (name === 'templates') loadTemplates();
+            else if (name === 'emails') loadEmails();
+            else if (name === 'logs') loadLogs();
+            else if (name === 'report') loadReport();
+        }
+
+        // ── Dashboard ──────────────────────────────────────────────────────────────
+        async function loadDashboard() {
+            const [jobs, emails, logs, sources] = await Promise.all([
+                api('/jobs?limit=1'),
+                api('/emails/logs?limit=200'),
+                api('/scrape/logs?limit=5'),
+                api('/sources'),
+            ]);
+            if (!jobs || !emails || !logs || !sources) return;
+
+            // Stats — we fetch counts from available data
+            const allJobs = await api('/jobs?limit=9999');
+            const sentCount = emails.filter(e => e.status === 'sent').length;
+            const failedCount = emails.filter(e => e.status === 'failed').length;
+            const activeSrc = sources.filter(s => s.is_active).length;
+
+            document.getElementById('s-jobs').textContent = allJobs ? allJobs.length : '—';
+            document.getElementById('s-sent').textContent = sentCount;
+            document.getElementById('s-failed').textContent = failedCount;
+            document.getElementById('s-sources').textContent = activeSrc;
+
+            // Recent emails
+            const re = document.getElementById('recent-emails');
+            re.innerHTML = '';
+            const recent = emails.slice(0, 8);
+            if (!recent.length) { re.innerHTML = '<tr><td colspan="6" class="empty">No applications yet</td></tr>'; return; }
+            for (const e of recent) {
+                re.innerHTML += `<tr>
+      <td>${e.contact_id}</td>
+      <td>—</td><td>—</td>
+      <td>${e.template_id || '—'}</td>
+      <td><span class="badge-${e.status === 'sent' ? 'green' : e.status === 'failed' ? 'red' : 'yellow'}">${e.status}</span></td>
+      <td>${fmt(e.sent_at)}</td>
+    </tr>`;
+            }
+
+            // Recent logs
+            const rl = document.getElementById('recent-logs');
+            rl.innerHTML = '';
+            for (const l of logs) {
+                const dur = l.ended_at ? Math.round((new Date(l.ended_at) - new Date(l.started_at)) / 1000) + 's' : '—';
+                rl.innerHTML += `<tr>
+      <td>${fmt(l.started_at)}</td>
+      <td>${l.sources_run}</td>
+      <td>${l.listings_found}</td>
+      <td>${l.emails_found}</td>
+      <td>${l.errors.length ? '<span class="badge-red">' + l.errors.length + ' err</span>' : '<span class="badge-green">Clean</span>'}</td>
+      <td>${dur}</td>
+    </tr>`;
+            }
+        }
+
+        // ── Jobs ──────────────────────────────────────────────────────────────────
+        async function loadJobs() {
+            const q = document.getElementById('job-search')?.value || '';
+            const data = await api(`/jobs?limit=200${q ? '&title=' + encodeURIComponent(q) : ''}`);
+            if (!data) return;
+            document.getElementById('job-count').textContent = data.length + ' listings';
+            const tb = document.getElementById('jobs-body');
+            if (!data.length) { tb.innerHTML = '<tr><td colspan="7" class="empty">No jobs scraped yet. Click ▶ Run Now.</td></tr>'; return; }
+            tb.innerHTML = data.map(j => `<tr>
+    <td>${j.title}</td>
+    <td>${j.company || '—'}</td>
+    <td>${j.location || '—'}</td>
+    <td>${j.raw_emails.length ? '<span class="badge-green">' + j.raw_emails.length + '</span>' : '<span class="badge-red">0</span>'}</td>
+    <td>${j.source_id}</td>
+    <td>${fmt(j.scraped_at)}</td>
+    <td>${j.url ? '<a href="' + j.url + '" target="_blank">View</a>' : '—'}</td>
+  </tr>`).join('');
+        }
+
+        // ── Sources ──────────────────────────────────────────────────────────────
+        async function loadSources() {
+            const data = await api('/sources');
+            if (!data) return;
+            const tb = document.getElementById('sources-body');
+            if (!data.length) { tb.innerHTML = '<tr><td colspan="6" class="empty">No sources configured</td></tr>'; return; }
+            tb.innerHTML = data.map(s => `<tr>
+    <td>${s.name}</td>
+    <td><a href="${s.url}" target="_blank">${s.url.replace('https://', '').split('/')[0]}</a></td>
+    <td><span class="badge-accent">${s.scraper_type}</span></td>
+    <td>${(s.keywords || []).slice(0, 2).join(', ') + (s.keywords.length > 2 ? ' +' + (s.keywords.length - 2) : ' ')}</td>
+    <td>${s.is_active ? '<span class="badge-green">Active</span>' : '<span class="badge-red">Off</span>'}</td>
+    <td>
+      <button class="btn btn-danger" onclick="toggleSource(${s.id},${!s.is_active})">${s.is_active ? 'Disable' : 'Enable'}</button>
+      <button class="btn btn-danger" style="margin-left:4px" onclick="deleteSource(${s.id})">Delete</button>
+    </td>
+  </tr>`).join('');
+        }
+        async function toggleSource(id, active) { await api('/sources/' + id, { method: 'PUT', body: { is_active: active } }); loadSources(); }
+        async function deleteSource(id) { if (confirm('Delete this source?')) { await api('/sources/' + id, { method: 'DELETE' }); loadSources(); } }
+
+        // ── Templates ─────────────────────────────────────────────────────────────
+        async function loadTemplates() {
+            const data = await api('/templates');
+            if (!data) return;
+            const tb = document.getElementById('templates-body');
+            if (!data.length) { tb.innerHTML = '<tr><td colspan="6" class="empty">No templates. Run seed script.</td></tr>'; return; }
+            tb.innerHTML = data.map(t => `<tr>
+    <td><strong>${t.name}</strong></td>
+    <td><span class="badge-accent">${t.category || 'general'}</span></td>
+    <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.subject}</td>
+    <td>v${t.version}</td>
+    <td>${t.is_active ? '<span class="badge-green">Active</span>' : '<span class="badge-red">Off</span>'}</td>
+    <td>
+      <button class="btn btn-danger" onclick="toggleTemplate(${t.id},${!t.is_active})">${t.is_active ? 'Deactivate' : 'Activate'}</button>
+    </td>
+  </tr>`).join('');
+        }
+        async function toggleTemplate(id, active) { await api('/templates/' + id, { method: 'PUT', body: { is_active: active } }); loadTemplates(); toast('Template updated'); }
+
+        // ── Emails ─────────────────────────────────────────────────────────────────
+        async function loadEmails() {
+            const data = await api('/emails/logs?limit=500');
+            if (!data) return;
+            renderEmails(data);
+        }
+        function filterEmails(f, el) {
+            emailFilter = f;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            loadEmails();
+        }
+        function renderEmails(data) {
+            const filtered = emailFilter === 'all' ? data : data.filter(e => e.status === emailFilter);
+            const tb = document.getElementById('emails-body');
+            if (!filtered.length) { tb.innerHTML = '<tr><td colspan="7" class="empty">No applications ' + emailFilter + '</td></tr>'; return; }
+            tb.innerHTML = filtered.map((e, i) => `<tr>
+    <td>${i + 1}</td>
+    <td>contact #${e.contact_id}</td>
+    <td>—</td><td>—</td>
+    <td>template #${e.template_id || '—'}</td>
+    <td><span class="badge-${e.status === 'sent' ? 'green' : e.status === 'failed' ? 'red' : 'yellow'}">${e.status}</span></td>
+    <td>${fmt(e.sent_at)}</td>
+  </tr>`).join('');
+        }
+
+        // ── Logs ──────────────────────────────────────────────────────────────────
+        async function loadLogs() {
+            const data = await api('/scrape/logs?limit=50');
+            if (!data) return;
+            const tb = document.getElementById('logs-body');
+            if (!data.length) { tb.innerHTML = '<tr><td colspan="8" class="empty">No scrape runs yet</td></tr>'; return; }
+            tb.innerHTML = data.map((l, i) => {
+                const dur = l.ended_at ? Math.round((new Date(l.ended_at) - new Date(l.started_at)) / 1000) + 's' : 'running…';
+                return `<tr>
+      <td>${i + 1}</td>
+      <td>${fmt(l.started_at)}</td>
+      <td>${l.ended_at ? fmt(l.ended_at) : '—'}</td>
+      <td>${l.sources_run}</td>
+      <td>${l.listings_found}</td>
+      <td>${l.emails_found}</td>
+      <td>${l.errors.length ? '<span class="badge-red" title="' + l.errors.join('; ') + '">' + l.errors.length + '</span>' : '<span class="badge-green">0</span>'}</td>
+      <td>${dur}</td>
+    </tr>`;
+            }).join('');
+        }
+
+        // ── Report ─────────────────────────────────────────────────────────────────
+        async function loadReport() {
+            const data = await api('/report');
+            if (!data) return;
+            const s = data.summary;
+            document.getElementById('report-content').innerHTML = `
+    <div><strong>Total Jobs Scraped:</strong> ${s.total_jobs}</div>
+    <div><strong>Applications Sent:</strong> ${s.total_sent}</div>
+    <div><strong>Applications Failed:</strong> ${s.total_failed}</div>
+    <div><strong>Unique Companies:</strong> ${s.unique_companies}</div>
+    <div><strong>Active Sources:</strong> ${s.active_sources}</div>
+    <div><strong>Last Run:</strong> ${s.last_run || 'Never'}</div>
+    <div style="margin-top:16px"><strong>Applications by Category:</strong>
+      ${Object.entries(s.by_category || {}).map(([k, v]) => `<span class="badge-accent" style="margin:2px">${k}: ${v}</span>`).join('')}
+    </div>`;
+            const tb = document.getElementById('report-table');
+            tb.innerHTML = data.applications.map(a => `<tr>
+    <td>${fmt(a.sent_at)}</td>
+    <td>${a.job_title}</td>
+    <td>${a.company}</td>
+    <td>${a.location}</td>
+    <td>${a.recipient_email}</td>
+    <td><span class="badge-accent">${a.cover_letter_category}</span></td>
+    <td><span class="badge-${a.status === 'sent' ? 'green' : a.status === 'failed' ? 'red' : 'yellow'}">${a.status}</span></td>
+  </tr>`).join('');
+        }
+        async function downloadReport() {
+            const data = await api('/report');
+            if (!data) return;
+            const b = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(b);
+            a.download = 'jobradar_report_' + new Date().toISOString().slice(0, 10) + '.json';
+            a.click();
+            toast('Report downloaded');
+        }
+
+        // ── Scrape trigger ─────────────────────────────────────────────────────────
+        async function triggerScrape() {
+            const r = await api('/scrape/run', { method: 'POST' });
+            if (r !== null) toast('Scrape started! Check Logs tab in ~2 min.');
+        }
+
+        // ── Modals ─────────────────────────────────────────────────────────────────
+        function openAddSource() { document.getElementById('modal-source').classList.add('open'); }
+        function openAddTemplate() { document.getElementById('modal-template').classList.add('open'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+        async function saveSource() {
+            const kw = document.getElementById('src-keywords').value.split(',').map(s => s.trim()).filter(Boolean);
+            const body = { name: document.getElementById('src-name').value, url: document.getElementById('src-url').value, scraper_type: document.getElementById('src-type').value, keywords: kw };
+            const r = await api('/sources', { method: 'POST', body });
+            if (r) { toast('Source added'); closeModal('modal-source'); loadSources(); }
+        }
+        async function saveTemplate() {
+            const body = { name: document.getElementById('tpl-name').value, category: document.getElementById('tpl-category').value, subject: document.getElementById('tpl-subject').value, html_body: document.getElementById('tpl-html').value, text_body: document.getElementById('tpl-text').value, is_active: true };
+            const r = await api('/templates', { method: 'POST', body });
+            if (r) { toast('Template saved'); closeModal('modal-template'); loadTemplates(); }
+        }
+
+        // ── Helpers ────────────────────────────────────────────────────────────────
+        function fmt(d) { if (!d) return '—'; const dt = new Date(d); return dt.toLocaleString('en-NG', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+    </script>
+</body>
+
+</html>

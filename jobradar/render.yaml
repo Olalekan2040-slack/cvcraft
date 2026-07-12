@@ -1,0 +1,64 @@
+services:
+  - type: web
+    name: jobradar
+    env: python
+    region: oregon
+    plan: free
+    pythonVersion: "3.11.9"
+    buildCommand: "pip install -r requirements.txt && PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/src/.playwright-browsers python -m playwright install chromium"
+    startCommand: "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    envVars:
+      # ── Database ─────────────────────────────────────────────────────────
+      - key: DATABASE_URL
+        sync: false          # set manually in Render dashboard
+
+      # ── JWT ──────────────────────────────────────────────────────────────
+      - key: SECRET_KEY
+        generateValue: true  # Render auto-generates a secure random value
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "480"
+
+      # ── Scheduler ────────────────────────────────────────────────────────
+      - key: SCRAPE_INTERVAL_HOURS
+        value: "3"
+
+      # ── SMTP / Email ─────────────────────────────────────────────────────
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "465"
+      - key: SMTP_USERNAME
+        sync: false          # set manually in Render dashboard
+      - key: SMTP_PASSWORD
+        sync: false          # Gmail App Password — set manually
+      - key: SMTP_FROM_NAME
+        value: "Sharafdeen Quadri O."
+      - key: SMTP_FROM_EMAIL
+        sync: false          # set manually in Render dashboard
+
+      # ── Outreach ─────────────────────────────────────────────────────────
+      - key: EMAIL_SEND_DELAY_SECONDS
+        value: "5"
+      - key: EMAIL_COOLDOWN_DAYS
+        value: "30"
+
+      # ── Applicant profile ────────────────────────────────────────────────
+      - key: APPLICANT_SKILLS
+        value: "Python, FastAPI, Django, React, PostgreSQL, REST APIs, HTML/CSS/JavaScript, Docker, AWS EC2"
+      - key: APPLICANT_GITHUB
+        value: "github.com/Olalekan2040-slack"
+      - key: APPLICANT_WEBSITE
+        value: "Quaddev.com"
+      - key: CV_PATH
+        value: "SHARAFDEEN QUADRI.pdf"
+
+      # ── Playwright ───────────────────────────────────────────────────────
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: /opt/render/project/src/.playwright-browsers
+
+      # ── Sentry (optional) ────────────────────────────────────────────────
+      - key: SENTRY_DSN
+        value: ""
