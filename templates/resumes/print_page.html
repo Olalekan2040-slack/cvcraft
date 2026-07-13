@@ -4,181 +4,216 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }} — Print</title>
+    <title>{{ title }} — Download</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+            integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnQ=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
-            background: #e5e7eb;
-            font-family: sans-serif;
-        }
+        body { background: #0f1117; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
 
-        /* Top bar — hidden when printing */
-        #print-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 999;
+        /* ── Top action bar ──────────────────────────────────────────── */
+        #action-bar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 999;
             background: #111520;
-            border-bottom: 1px solid #C9A84C33;
-            padding: 12px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
+            border-bottom: 1px solid rgba(201,168,76,0.2);
+            padding: 10px 20px;
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
         }
 
-        #print-bar .info {
-            color: #d1d5db;
-            font-size: 14px;
-        }
+        .bar-info { color: #d1d5db; font-size: 13px; }
+        .bar-info strong { color: #fff; font-weight: 600; }
+        .bar-tip { color: #4b5563; font-size: 11px; margin-left: 8px; }
 
-        #print-bar .info strong {
-            color: #fff;
-        }
+        .bar-actions { display: flex; gap: 8px; align-items: center; }
 
-        #print-bar .actions {
-            display: flex;
-            gap: 10px;
+        .btn-download {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: #C9A84C; color: #0A0C0F;
+            font-weight: 700; font-size: 13px;
+            padding: 8px 20px; border-radius: 8px;
+            cursor: pointer; border: none; transition: opacity .15s;
         }
+        .btn-download:hover { opacity: .88; }
+        .btn-download:disabled { opacity: .55; cursor: not-allowed; }
 
         .btn-print {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: #C9A84C;
-            color: #0A0C0F;
-            font-weight: 600;
-            font-size: 14px;
-            padding: 8px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            border: none;
-            text-decoration: none;
+            display: inline-flex; align-items: center; gap: 6px;
+            background: transparent; color: #9ca3af;
+            font-size: 13px; padding: 8px 14px; border-radius: 8px;
+            cursor: pointer; border: 1px solid #374151; transition: all .15s;
         }
+        .btn-print:hover { color: #fff; border-color: #6b7280; }
 
         .btn-back {
-            display: inline-flex;
+            display: inline-flex; align-items: center; gap: 6px;
+            background: transparent; color: #6b7280;
+            font-size: 13px; padding: 8px 14px; border-radius: 8px;
+            cursor: pointer; border: 1px solid #374151; text-decoration: none;
+            transition: all .15s;
+        }
+        .btn-back:hover { color: #d1d5db; border-color: #6b7280; }
+
+        /* ── Page layout ─────────────────────────────────────────────── */
+        .page-wrap {
+            padding-top: 60px;
+            display: flex; flex-direction: column;
             align-items: center;
-            gap: 8px;
-            background: transparent;
-            color: #9ca3af;
-            font-size: 14px;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            border: 1px solid #374151;
-            text-decoration: none;
-        }
-
-        .btn-back:hover {
-            color: #fff;
-            border-color: #6b7280;
-        }
-
-        .tip {
-            color: #6b7280;
-            font-size: 12px;
-        }
-
-        .resume-wrap {
-            padding-top: 68px;
-            /* height of print bar */
-            display: flex;
-            justify-content: center;
             padding-bottom: 48px;
+            min-height: 100vh;
         }
 
+        /* Progress toast */
+        #progress-toast {
+            display: none;
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            background: #1a1f2e; border: 1px solid rgba(201,168,76,.3);
+            color: #C9A84C; font-size: 13px; padding: 10px 20px;
+            border-radius: 20px; z-index: 9999;
+            align-items: center; gap: 8px;
+            box-shadow: 0 8px 32px rgba(0,0,0,.5);
+        }
+        #progress-toast.visible { display: flex; }
+
+        /* Quaddev credit — hidden on screen, shown in PDF via JS */
         .quaddev-credit {
             display: none;
+            text-align: center;
+            font-size: 8pt;
+            color: #aaa;
+            padding: 6pt 0 4pt;
+            border-top: 0.5pt solid #e5e7eb;
+            margin: 4mm 20mm 0;
+            letter-spacing: 0.3px;
         }
+        .quaddev-credit a { color: #C9A84C; text-decoration: none; }
 
-        /* When printing: hide bar, remove grey bg, remove padding */
+        /* Print fallback */
         @media print {
-            #print-bar {
-                display: none !important;
-            }
-
-            body {
-                background: white;
-            }
-
-            .resume-wrap {
-                padding: 0;
-                display: block;
-            }
-
+            #action-bar { display: none !important; }
+            body { background: white; }
+            .page-wrap { padding: 0; display: block; }
             .quaddev-credit {
-                display: block;
+                display: block !important;
                 text-align: center;
                 font-family: 'Helvetica Neue', Arial, sans-serif;
-                font-size: 7.5pt;
-                color: #aaa;
+                font-size: 7.5pt; color: #aaa;
                 padding: 6pt 0 4pt;
                 border-top: 0.5pt solid #e5e7eb;
                 margin: 6mm 20mm 0;
-                letter-spacing: 0.3px;
             }
-
-            .quaddev-credit a {
-                color: #C9A84C;
-                text-decoration: none;
-            }
-
-            @page {
-                size: A4;
-                margin: 10mm 0 8mm;
-            }
-
-            @page :first {
-                margin: 0;
-            }
+            @page { size: A4; margin: 10mm 0 8mm; }
+            @page :first { margin: 0; }
         }
     </style>
 </head>
 
 <body>
 
-    <div id="print-bar">
-        <div class="info">
-            <strong>{{ title }}</strong>
-            <span class="tip"> &nbsp;·&nbsp; Click "Save as PDF" in the print dialog for best results</span>
-        </div>
-        <div class="actions">
-            <a href="{{ back_url }}" class="btn-back">← Back</a>
-            <button class="btn-print" onclick="window.print()">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                    <rect x="6" y="14" width="12" height="8"></rect>
-                </svg>
-                Save as PDF
-            </button>
-        </div>
+<div id="action-bar">
+    <div class="bar-info">
+        <strong>{{ title }}</strong>
+        <span class="bar-tip">PDF downloads directly to your device</span>
     </div>
+    <div class="bar-actions">
+        <a href="{{ back_url }}" class="btn-back">← Back</a>
+        <button class="btn-print" onclick="window.print()" title="Open print dialog">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <polyline points="6 9 6 2 18 2 18 9"/>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                <rect x="6" y="14" width="12" height="8"/>
+            </svg>
+            Print
+        </button>
+        <button class="btn-download" id="download-btn" onclick="downloadPDF()">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download PDF
+        </button>
+    </div>
+</div>
 
-    <div class="resume-wrap">
+<div class="page-wrap">
+    <div id="resume-content">
         {{ resume_html|safe }}
-        <div class="quaddev-credit">
-            Created by <a href="https://quaddev.onrender.com">Quaddev</a> &bull; quaddev.onrender.com
-        </div>
     </div>
+    <div class="quaddev-credit" id="quaddev-credit">
+        Created by <a href="https://quaddev.onrender.com">Quaddev</a> &bull; quaddev.onrender.com
+    </div>
+</div>
 
-    <script>
-        // Auto-open print dialog after fonts load
-        window.addEventListener('load', function () {
-            {% if auto_print %}
-            setTimeout(function () { window.print(); }, 600);
-            {% endif %}
-        });
-    </script>
+<div id="progress-toast">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+         style="animation: spin 1s linear infinite">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+    </svg>
+    <span id="toast-msg">Generating your PDF…</span>
+</div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+async function downloadPDF() {
+    const btn = document.getElementById('download-btn');
+    const toast = document.getElementById('progress-toast');
+    const toastMsg = document.getElementById('toast-msg');
+    const credit = document.getElementById('quaddev-credit');
+
+    btn.disabled = true;
+    btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Generating…';
+    toast.classList.add('visible');
+    toastMsg.textContent = 'Rendering resume…';
+
+    // Show the Quaddev credit for the PDF
+    if (credit) credit.style.display = 'block';
+
+    const element = document.getElementById('resume-content');
+
+    const filename = '{{ title|escapejs }}.pdf';
+
+    const opt = {
+        margin:       0,
+        filename:     filename,
+        image:        { type: 'jpeg', quality: 0.97 },
+        html2canvas:  {
+            scale:          2,
+            useCORS:        true,
+            allowTaint:     true,
+            letterRendering: true,
+            logging:        false,
+            scrollX:        0,
+            scrollY:        0,
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+    };
+
+    try {
+        toastMsg.textContent = 'Building PDF…';
+        await html2pdf().set(opt).from(element).save();
+        toastMsg.textContent = 'Downloaded!';
+        setTimeout(() => toast.classList.remove('visible'), 2000);
+    } catch (err) {
+        console.error('PDF generation failed:', err);
+        toastMsg.textContent = 'Failed — opening print dialog instead';
+        setTimeout(() => {
+            toast.classList.remove('visible');
+            window.print();
+        }, 1500);
+    } finally {
+        // Hide the credit again after PDF generation
+        if (credit) credit.style.display = 'none';
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download PDF';
+    }
+}
+</script>
 
 </body>
-
 </html>

@@ -118,8 +118,31 @@
     <script src="{% static 'js/main.js' %}"></script>
     <script>lucide.createIcons();</script>
 
-    <!-- Keep-alive: ping every 30s to prevent Render cold starts -->
-    <script>setInterval(() => fetch('/ping/').catch(() => {}), 30000);</script>
+    <!-- Keep-alive: ping every 25s. Uses keepalive:true so the request
+         completes even when navigating away. Falls back to a longer interval
+         when the tab is hidden (browsers throttle hidden timers). -->
+    <script>
+    (function () {
+      var PING_URL = '/ping/';
+      var INTERVAL_ACTIVE = 25000;
+      var INTERVAL_HIDDEN = 55000;
+      var _timer = null;
+
+      function doPing() {
+        fetch(PING_URL, { keepalive: true, cache: 'no-store' }).catch(function () {});
+      }
+
+      function schedule() {
+        clearInterval(_timer);
+        var delay = document.hidden ? INTERVAL_HIDDEN : INTERVAL_ACTIVE;
+        _timer = setInterval(doPing, delay);
+      }
+
+      doPing();           // immediate first ping on page load
+      schedule();
+      document.addEventListener('visibilitychange', schedule);
+    })();
+    </script>
 
     {% block extra_js %}{% endblock %}
 </body>
