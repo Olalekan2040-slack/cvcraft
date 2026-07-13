@@ -1,17 +1,21 @@
+import json
 import threading
 import logging
 
-from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
 from django.db.models import Q
+from django.http import JsonResponse
+from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
-
-import json
+from django.views.decorators.http import require_POST
 
 from resumes.models import Resume
-from .models import JobListing, UserJobInteraction, JobScrapeLog, JobPreference, LOCATION_CHOICES, LOCATION_KEYWORDS
+from .models import (
+    JobListing, UserJobInteraction, JobScrapeLog,
+    JobPreference, UserJobTarget,
+    LOCATION_CHOICES, LOCATION_KEYWORDS,
+)
 from .services.ats import calculate_ats_score, score_label, score_css_class
 from .services.keywords import extract_keywords
 
@@ -23,42 +27,77 @@ _FALLBACK_KEYWORDS = [
     'react developer', 'vue developer', 'nodejs developer',
     'data analyst', 'data scientist', 'machine learning engineer',
     'web developer', 'frontend developer', 'devops engineer',
-    'product manager', 'ux designer', 'ui designer',
 ]
 
 
-def _run_scrape_background(log_id):
-    """Run scrape_all in a background thread and update the log when done."""
+# ── Per-user keyword extraction ───────────────────────────────────────────────
+
+def _user_keywords(user: User) -> list:
+    """
+    Build a keyword list tailored to this user's CV.
+    Combines job title, skills, technologies, and experience positions.
+    Falls back to generic keywords if the user has no resume.
+    """
+    resume = Resume.objects.filter(user=user).first()
+    if not resume:
+        return _FALLBACK_KEYWORDS
+    data = resume.get_data()
+    keywords = extract_keywords(data)
+    return keywords if keywords else _FALLBACK_KEYWORDS
+
+
+# ── Background scraper ────────────────────────────────────────────────────────
+
+def _run_scrape_background(log_id: int, user_id: int | None = None) -> None:
+    """
+    Scrape job boards and link results to the requesting user.
+
+    If user_id is given:  uses only that user's CV keywords, creates
+                          UserJobTarget rows so their feed is personalised.
+    If user_id is None:   fallback global scrape (used on first deploy).
+    """
     from .services.scraper import scrape_all
 
     log = JobScrapeLog.objects.get(pk=log_id)
+    user = None
     try:
-        kw_set = set()
-        for resume in Resume.objects.all():
-            try:
-                kw_set.update(extract_keywords(resume.get_data()))
-            except Exception:
-                pass
-        keywords = list(kw_set) if kw_set else _FALLBACK_KEYWORDS
+        if user_id:
+            user = User.objects.get(pk=user_id)
+            keywords = _user_keywords(user)
+            logger.info(
+                "Per-user scrape for %s using %d keywords: %s…",
+                user.username, len(keywords), keywords[:5],
+            )
+        else:
+            # Global fallback — combine all resumes
+            kw_set: set = set()
+            for resume in Resume.objects.all():
+                try:
+                    kw_set.update(extract_keywords(resume.get_data()))
+                except Exception:
+                    pass
+            keywords = list(kw_set) if kw_set else _FALLBACK_KEYWORDS
+            logger.info("Global scrape with %d keywords", len(keywords))
 
         raw = scrape_all(keywords)
         new_count = 0
         skip_count = 0
-        sources_seen = set()
+        sources_seen: set = set()
 
         for item in raw:
             url = (item.get('url') or '').strip()
             if not url:
                 skip_count += 1
                 continue
+
             sources_seen.add(item['source_name'])
-            _, created = JobListing.objects.get_or_create(
+            listing, created = JobListing.objects.get_or_create(
                 url=url,
                 defaults={
                     'source_name': item['source_name'],
-                    'title': item['title'],
-                    'company': item.get('company', ''),
-                    'location': item.get('location', ''),
+                    'title':       item['title'],
+                    'company':     item.get('company', ''),
+                    'location':    item.get('location', ''),
                     'description': item.get('description', ''),
                     'keywords_matched': item.get('keywords_matched', []),
                 },
@@ -68,13 +107,24 @@ def _run_scrape_background(log_id):
             else:
                 skip_count += 1
 
+            # Link this job to the user who requested the scrape
+            if user:
+                UserJobTarget.objects.get_or_create(
+                    user=user,
+                    job=listing,
+                    defaults={'matched_keywords': item.get('keywords_matched', [])},
+                )
+
         log.ended_at = timezone.now()
         log.listings_new = new_count
         log.listings_skipped = skip_count
         log.sources_run = len(sources_seen)
         log.status = 'done'
         log.save()
-        logger.info("Background scrape done: %d new, %d skipped", new_count, skip_count)
+        logger.info(
+            "Scrape done [%s]: %d new, %d skipped, %d sources",
+            user.username if user else 'global', new_count, skip_count, len(sources_seen),
+        )
     except Exception as exc:
         logger.exception("Background scrape failed")
         log.status = 'error'
@@ -83,74 +133,88 @@ def _run_scrape_background(log_id):
         log.save()
 
 
-def start_scrape_thread():
-    """Create a running log entry and kick off _run_scrape_background."""
-    if JobScrapeLog.objects.filter(status='running').exists():
+def start_scrape_thread(user: User | None = None) -> 'JobScrapeLog | None':
+    """
+    Create a JobScrapeLog and start the background scrape thread.
+    If a scrape is already running for this user, returns None.
+    """
+    qs = JobScrapeLog.objects.filter(status='running')
+    if user:
+        qs = qs.filter(user=user)
+    else:
+        qs = qs.filter(user__isnull=True)
+
+    if qs.exists():
         return None
-    log = JobScrapeLog.objects.create(status='running')
-    t = threading.Thread(target=_run_scrape_background, args=(log.pk,), daemon=True)
+
+    log = JobScrapeLog.objects.create(status='running', user=user)
+    t = threading.Thread(
+        target=_run_scrape_background,
+        args=(log.pk,),
+        kwargs={'user_id': user.pk if user else None},
+        daemon=True,
+    )
     t.start()
     return log
 
 
-def _primary_resume_data(user):
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _primary_resume_data(user: User) -> dict:
     resume = Resume.objects.filter(user=user).first()
     return resume.get_data() if resume else {}
 
 
 def _location_matches(job_location: str, preferred: list) -> bool:
-    """
-    Return True if the job should be shown given the user's location preferences.
-    Jobs tagged Remote/Worldwide always pass. Empty preference = show all.
-    """
     if not preferred or 'worldwide' in preferred:
         return True
-
-    loc_lower = (' ' + (job_location or '').lower() + ' ')
-
-    # Always show remote/worldwide jobs regardless of filter
+    loc_lower = ' ' + (job_location or '').lower() + ' '
     universal = ['remote', 'worldwide', 'anywhere', 'global', 'international']
     if any(u in loc_lower for u in universal):
         return True
-    # Empty location → assume worldwide
     if not job_location or not job_location.strip():
         return True
-
-    # Check preferred countries
     for code in preferred:
-        keywords = LOCATION_KEYWORDS.get(code, [])
-        if any(k in loc_lower for k in keywords):
+        if any(k in loc_lower for k in LOCATION_KEYWORDS.get(code, [])):
             return True
     return False
 
+
+# ── Views ─────────────────────────────────────────────────────────────────────
 
 @login_required
 def feed(request):
     resume_data = _primary_resume_data(request.user)
     keywords = extract_keywords(resume_data)
+    has_resume = bool(resume_data.get('personal', {}).get('full_name'))
     tab = request.GET.get('tab', 'all')
-    q = request.GET.get('q', '').strip()
+    q   = request.GET.get('q', '').strip()
 
-    # Load or create user location preferences
     pref, _ = JobPreference.objects.get_or_create(user=request.user)
     preferred_locations = pref.preferred_locations or []
 
     dismissed_ids = set(
         UserJobInteraction.objects.filter(
-            user=request.user, status=UserJobInteraction.STATUS_DISMISSED
+            user=request.user, status=UserJobInteraction.STATUS_DISMISSED,
         ).values_list('job_id', flat=True)
     )
     saved_map = {
         i.job_id: i
         for i in UserJobInteraction.objects.filter(
-            user=request.user, status=UserJobInteraction.STATUS_SAVED
+            user=request.user, status=UserJobInteraction.STATUS_SAVED,
         )
     }
 
+    # ── Only show jobs scraped FOR this user ──────────────────────────────────
     if tab == 'saved':
         qs = JobListing.objects.filter(id__in=saved_map.keys(), is_active=True)
     else:
-        qs = JobListing.objects.filter(is_active=True).exclude(id__in=dismissed_ids)
+        qs = (
+            JobListing.objects
+            .filter(user_targets__user=request.user, is_active=True)
+            .exclude(id__in=dismissed_ids)
+            .distinct()
+        )
 
     if q:
         qs = qs.filter(
@@ -160,46 +224,59 @@ def feed(request):
 
     jobs = list(qs.order_by('-scraped_at')[:500])
 
-    # Apply location filter
+    # Location filter
     if preferred_locations and 'worldwide' not in preferred_locations:
         jobs = [j for j in jobs if _location_matches(j.location, preferred_locations)]
 
-    # Cap after location filter
     jobs = jobs[:200]
+
+    # ── Auto-trigger a per-user scrape if this user has no jobs yet ───────────
+    user_job_count = UserJobTarget.objects.filter(user=request.user).count()
+    user_scrape_running = JobScrapeLog.objects.filter(
+        status='running', user=request.user,
+    ).exists()
+
+    if has_resume and user_job_count == 0 and not user_scrape_running and tab != 'saved':
+        log = start_scrape_thread(user=request.user)
+        if log:
+            user_scrape_running = True
 
     cards = []
     for job in jobs:
-        score, breakdown = calculate_ats_score(
-            job.title, job.description, resume_data
-        )
+        score, breakdown = calculate_ats_score(job.title, job.description, resume_data)
         cards.append({
-            'job': job,
-            'score': score,
-            'label': score_label(score),
-            'css': score_css_class(score),
-            'breakdown': breakdown,
-            'snippet': job.description_snippet(),
-            'is_saved': job.id in saved_map,
-            'stack_fit': breakdown.get('stack', {}).get('fit', 'unknown'),
-            'job_langs': breakdown.get('stack', {}).get('job_langs', []),
+            'job':        job,
+            'score':      score,
+            'label':      score_label(score),
+            'css':        score_css_class(score),
+            'breakdown':  breakdown,
+            'snippet':    job.description_snippet(),
+            'is_saved':   job.id in saved_map,
+            'stack_fit':  breakdown.get('stack', {}).get('fit', 'unknown'),
+            'job_langs':  breakdown.get('stack', {}).get('job_langs', []),
         })
 
     cards.sort(key=lambda c: c['score'], reverse=True)
 
-    last_scrape = JobScrapeLog.objects.filter(status='done').order_by('-ended_at').first()
-    total_jobs = JobListing.objects.filter(is_active=True).count()
+    last_scrape = (
+        JobScrapeLog.objects
+        .filter(status='done', user=request.user)
+        .order_by('-ended_at')
+        .first()
+    )
 
     return render(request, 'jobs/feed.html', {
-        'cards': cards,
-        'tab': tab,
-        'q': q,
-        'keywords': keywords[:12],
-        'has_resume': bool(resume_data.get('personal', {}).get('full_name')),
-        'total_jobs': total_jobs,
-        'saved_count': len(saved_map),
-        'last_scrape': last_scrape,
+        'cards':               cards,
+        'tab':                 tab,
+        'q':                   q,
+        'keywords':            keywords[:12],
+        'has_resume':          has_resume,
+        'total_jobs':          user_job_count,
+        'saved_count':         len(saved_map),
+        'last_scrape':         last_scrape,
         'preferred_locations': preferred_locations,
-        'location_choices': LOCATION_CHOICES,
+        'location_choices':    LOCATION_CHOICES,
+        'scrape_running':      user_scrape_running,
     })
 
 
@@ -220,8 +297,7 @@ def toggle_save(request, job_id):
         resume_data = _primary_resume_data(request.user)
         score, _ = calculate_ats_score(job.title, job.description, resume_data)
         UserJobInteraction.objects.create(
-            user=request.user,
-            job=job,
+            user=request.user, job=job,
             status=UserJobInteraction.STATUS_SAVED,
             ats_score=score,
         )
@@ -242,11 +318,9 @@ def dismiss_job(request, job_id):
 @login_required
 @require_POST
 def save_preferences(request):
-    """Save user's preferred job locations."""
     try:
         body = json.loads(request.body)
         locations = body.get('preferred_locations', [])
-        # Validate: only allow known codes
         valid_codes = {code for code, _ in LOCATION_CHOICES}
         locations = [loc for loc in locations if loc in valid_codes]
         pref, _ = JobPreference.objects.get_or_create(user=request.user)
@@ -260,10 +334,10 @@ def save_preferences(request):
 @login_required
 @require_POST
 def trigger_scrape(request):
-    """Kick off a background scrape if none is already running."""
-    if JobScrapeLog.objects.filter(status='running').exists():
+    """Kick off a per-user background scrape."""
+    if JobScrapeLog.objects.filter(status='running', user=request.user).exists():
         return JsonResponse({'status': 'already_running'})
-    log = start_scrape_thread()
+    log = start_scrape_thread(user=request.user)
     if log:
         return JsonResponse({'status': 'started'})
     return JsonResponse({'status': 'already_running'})
@@ -271,12 +345,17 @@ def trigger_scrape(request):
 
 @login_required
 def scrape_status(request):
-    """Poll endpoint: returns current scrape progress and job count."""
-    running = JobScrapeLog.objects.filter(status='running').exists()
-    total = JobListing.objects.filter(is_active=True).count()
-    last = JobScrapeLog.objects.filter(status='done').order_by('-ended_at').first()
+    """Poll endpoint — returns this user's scrape progress and job count."""
+    running   = JobScrapeLog.objects.filter(status='running', user=request.user).exists()
+    total     = UserJobTarget.objects.filter(user=request.user).count()
+    last      = (
+        JobScrapeLog.objects
+        .filter(status='done', user=request.user)
+        .order_by('-ended_at')
+        .first()
+    )
     return JsonResponse({
-        'running': running,
+        'running':    running,
         'total_jobs': total,
         'last_scrape': last.ended_at.isoformat() if last and last.ended_at else None,
     })

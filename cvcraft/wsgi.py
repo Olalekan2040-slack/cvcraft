@@ -13,13 +13,33 @@ except Exception as _mig_err:
     import traceback
     traceback.print_exc()
 
-# Auto-seed jobs on first deploy: if the DB is fresh (no jobs yet), kick off
-# a background scrape so Job Radar works out-of-the-box without any manual steps.
+# Auto-seed jobs on first deploy: kick off per-user scrapes for every user
+# who has a resume but no job targets yet. Falls back to a global scrape
+# when no users with resumes exist (brand-new deploy with no accounts).
 try:
-    from jobs.models import JobListing, JobScrapeLog
-    if not JobListing.objects.exists() and not JobScrapeLog.objects.filter(status='running').exists():
+    from jobs.models import JobListing, JobScrapeLog, UserJobTarget
+    from resumes.models import Resume
+    if not JobScrapeLog.objects.filter(status='running').exists():
         from jobs.views import start_scrape_thread
-        start_scrape_thread()
+        users_with_resumes = (
+            Resume.objects.select_related('user')
+            .values_list('user', flat=True)
+            .distinct()
+        )
+        seeded = 0
+        for uid in users_with_resumes:
+            if not UserJobTarget.objects.filter(user_id=uid).exists():
+                from django.contrib.auth.models import User as _User
+                try:
+                    u = _User.objects.get(pk=uid)
+                    if not JobScrapeLog.objects.filter(status='running', user=u).exists():
+                        start_scrape_thread(user=u)
+                        seeded += 1
+                except Exception:
+                    pass
+        if seeded == 0 and not JobListing.objects.exists():
+            # Truly fresh deploy — global seed
+            start_scrape_thread()
 except Exception as _seed_err:
     import traceback
     traceback.print_exc()

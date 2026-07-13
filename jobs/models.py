@@ -104,7 +104,27 @@ class JobPreference(models.Model):
         return f"{self.user.username} prefers: {locs}"
 
 
+class UserJobTarget(models.Model):
+    """Records which user's profile caused a job listing to be included in their feed."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='job_targets')
+    job = models.ForeignKey(JobListing, on_delete=models.CASCADE, related_name='user_targets')
+    matched_keywords = models.JSONField(default=list)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'job')
+        indexes = [models.Index(fields=['user', 'created_at'])]
+
+    def __str__(self):
+        return f"{self.user.username} ← {self.job.title}"
+
+
 class JobScrapeLog(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='scrape_logs',
+        help_text='Set when this scrape was triggered for a specific user.',
+    )
     started_at = models.DateTimeField(auto_now_add=True)
     ended_at = models.DateTimeField(null=True, blank=True)
     sources_run = models.IntegerField(default=0)
@@ -117,4 +137,5 @@ class JobScrapeLog(models.Model):
         ordering = ['-started_at']
 
     def __str__(self):
-        return f"Scrape {self.started_at:%Y-%m-%d %H:%M} — {self.status}"
+        who = self.user.username if self.user else 'global'
+        return f"Scrape [{who}] {self.started_at:%Y-%m-%d %H:%M} — {self.status}"

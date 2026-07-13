@@ -232,22 +232,41 @@
     <p class="text-gray-500 text-lg">No jobs match your location filter.</p>
     <p class="text-gray-600 text-sm mt-1">Try adding more countries or clear the filter to see all remote jobs.</p>
     <button onclick="clearLocations()" class="btn-gold mt-4 inline-block">Clear location filter</button>
+    {% elif scrape_running %}
+    <div id="scrape-progress" class="mt-2">
+      <div class="flex items-center justify-center gap-3 text-gold">
+        <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <span class="font-medium">Fetching jobs tailored for your profile&hellip;</span>
+      </div>
+      <p class="text-gray-600 text-sm mt-2">Scanning Remotive, Himalayas, Remote OK and more using your CV skills.</p>
+      <p class="text-gray-700 text-xs mt-1">This page will refresh automatically when done.</p>
+    </div>
     {% else %}
-    <p class="text-gray-500 text-lg" id="empty-title">No jobs indexed yet.</p>
-    <p class="text-gray-600 text-sm mt-1" id="empty-sub">Click below to fetch live job listings from 7 sources. This takes about 60 seconds.</p>
+    <p class="text-gray-500 text-lg" id="empty-title">No personalised jobs yet.</p>
+    <p class="text-gray-600 text-sm mt-1" id="empty-sub">
+      {% if has_resume %}We'll search using your CV skills and job title.{% else %}Create a CV first so we can tailor your feed.{% endif %}
+      Takes about 60 seconds.
+    </p>
+    {% if has_resume %}
     <button id="fetch-btn" onclick="fetchJobs()" class="btn-gold mt-5 inline-flex items-center gap-2 px-6 py-3">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-      Fetch Fresh Jobs
+      Fetch My Jobs
     </button>
+    {% else %}
+    <a href="{% url 'resumes:create' %}" class="btn-gold mt-5 inline-flex items-center gap-2 px-6 py-3">Build your CV</a>
+    {% endif %}
     <div id="scrape-progress" class="hidden mt-6">
       <div class="flex items-center justify-center gap-3 text-gold">
         <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
         </svg>
-        <span class="font-medium">Scanning job boards&hellip;</span>
+        <span class="font-medium">Fetching jobs tailored for your profile&hellip;</span>
       </div>
-      <p class="text-gray-600 text-sm mt-2">Checking Remotive, Himalayas, Remote OK and 4 more sources.</p>
+      <p class="text-gray-600 text-sm mt-2">Scanning Remotive, Himalayas, Remote OK and more using your CV skills.</p>
       <p class="text-gray-700 text-xs mt-1">This page will refresh automatically when done.</p>
     </div>
     {% endif %}
@@ -468,7 +487,11 @@ async function pollStatus() {
 }
 
 (async function autoCheckOnLoad() {
-  {% if not cards and tab != 'saved' and not q and not preferred_locations %}
+  // If a scrape is already running (server told us, or we detect via polling), auto-poll.
+  {% if scrape_running %}
+  // Server already flagged a running scrape — start polling immediately.
+  _pollTimer = setInterval(pollStatus, 4000);
+  {% elif not cards and tab != 'saved' and not q and not preferred_locations %}
   try {
     const resp = await fetch(STATUS_URL);
     const data = await resp.json();
